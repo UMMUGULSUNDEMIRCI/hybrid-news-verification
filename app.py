@@ -21,10 +21,10 @@ NEWSDATA_API_KEY = "pub_1740d5ba773b4c15b4c65f55ae55b886"
 POSTGRES_URI = "postgresql://postgres:meoBKAAQ8aywkn83@db.pgzgqtzrvbzxlbdkrmyq.supabase.co:5432/postgres"
 
 # NLTK verilerinin bu temiz klasöre indirilmesini zorunlu kılıyoruz
-nltk.data.path.append(os.path.join(BASE_DIR, "nltk_data"))
-nltk.download('stopwords', download_dir=os.path.join(BASE_DIR, "nltk_data"), quiet=True)
-nltk.download('punkt', download_dir=os.path.join(BASE_DIR, "nltk_data"), quiet=True)
-nltk.download('punkt_tab', download_dir=os.path.join(BASE_DIR, "nltk_data"), quiet=True)
+# NLTK verilerinin bulut sunucusunda sorunsuz çalışması için garanti yöntem
+nltk.download('stopwords', quiet=True)
+nltk.download('punkt', quiet=True)
+nltk.download('punkt_tab', quiet=True)
 
 # ==========================================
 # 2. YAPAY ZEKA MODELLERİNİN YÜKLENMESİ
