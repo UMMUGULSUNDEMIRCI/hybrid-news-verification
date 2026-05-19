@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hybrid News Verification System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .main-card { border: none; border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.05); }
+        .result-box { border-radius: 12px; padding: 25px; margin-top: 30px; }
+        
+        /* Sonuç durumlarına göre dinamik renk tonları */
+        .bg-safe { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; }
+        .bg-warning-custom { background-color: #fff3cd; color: #664d03; border: 1px solid #ffecb5; }
+        .bg-danger-custom { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; }
+        
+        .progress { background-color: rgba(0,0,0,0.05); border-radius: 8px; }
+        .progress-bar { border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-9 col-lg-8">
+            
+            <div class="text-center mb-5">
+                <h1 class="fw-bold text-dark">Hybrid News Verification System</h1>
+                <p class="text-muted fs-5">NLP (Random Forest) & Live Media API Based Fact-Checking Architecture</p>
+            </div>
+
+            <div class="card main-card p-4 p-md-5 bg-white">
+                <form method="POST">
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-secondary">Haber Başlığı / İddia (Live API Search)</label>
+                        <input type="text" name="haber_basligi" class="form-control form-control-lg" placeholder="Örn: Sağlık Bakanlığı okulları tatil etti mi?" required value="{{ baslik if baslik else '' }}">
+                        <div class="form-text text-muted">Bu alan Newsdata.io API üzerinden güncel haber mecralarında canlı olarak aranacaktır.</div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-secondary">Haber İçeriği / Detay Paragrafı (NLP Model Analysis)</label>
+                        <textarea name="haber_detayi" class="form-control" rows="5" placeholder="Haberin tam metnini veya sosyal medyadaki paylaşım detaylarını buraya yapıştırabilirsiniz...">{{ detay if detay else '' }}</textarea>
+                        <div class="form-text text-muted">Bu alan Word2Vec kelime gömme ve Random Forest sınıflandırma modelimiz tarafından anlamsal (semantik) analize tabi tutulacaktır.</div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm py-3">Sistem Analizini Başlat</button>
+                </form>
+
+                {% if error %}
+                    <div class="alert alert-danger mt-4 border-0 shadow-sm">{{ error }}</div>
+                {% endif %}
+
+                {% if sonuc %}
+                    <div class="result-box {% if final_skor >= 70 %}bg-safe{% elif final_skor >= 45 %}bg-warning-custom{% else %}bg-danger-custom{% endif %} shadow-sm">
+                        <h3 class="fw-bold text-center mb-2">📊 SİSTEM KARARI: {{ karar }}</h3>
+                        <p class="text-center small text-secondary mb-4">Veri İşleme Tipi: <span class="badge bg-dark">{{ kaynak }}</span></p>
+                        <hr class="opacity-10">
+                        
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="fw-semibold">🤖 Yapay Zeka Üslup ve Semantik Skoru (NLP %40):</span>
+                                <span class="fw-bold">%{{ "%.2f"|format(model_skoru) }}</span>
+                            </div>
+                            <div class="progress" style="height: 12px;">
+                                <div class="progress-bar bg-primary progress-bar-striped progress-bar-animated" style="width: {{ model_skoru }}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="fw-semibold">🌐 Canlı Medya ve Otorite Kanıt Skoru (API %60):</span>
+                                <span class="fw-bold">%{{ "%.2f"|format(api_skoru) }}</span>
+                            </div>
+                            <div class="progress" style="height: 12px;">
+                                <div class="progress-bar bg-info progress-bar-striped progress-bar-animated" style="width: {{ api_skoru }}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-3 text-center border-top border-secondary border-opacity-10">
+                            <h5 class="text-uppercase tracking-wider text-secondary fw-bold mb-1">🏁 Hibrit Hesaplanan Nihai Doğruluk Oranı</h5>
+                            <h1 class="display-4 fw-black m-0" style="font-weight: 900;">%{{ "%.2f"|format(final_skor) }}</h1>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
