@@ -18,8 +18,8 @@ app = Flask(__name__, template_folder=os.path.join(BASE_DIR, 'templates'))
 # 1. GÜVENLİK, API VE VERİTABANI AYARLARI
 # ==========================================
 NEWSDATA_API_KEY = "pub_1740d5ba773b4c15b4c65f55ae55b886"
-POSTGRES_URI = "postgresql://postgres:meoBKAAQ8aywkn83@db.pgzgqtzrvbzxlbdkrmyq.supabase.co:5432/postgres"
 
+POSTGRES_URI = "postgresql://postgres.pgzgqtzrvbzxlbdkrmyq:meoBKAAQ8aywkn83@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres"
 # NLTK verilerinin bu temiz klasöre indirilmesini zorunlu kılıyoruz
 # NLTK verilerinin bulut sunucusunda sorunsuz çalışması için garanti yöntem
 nltk.download('stopwords', quiet=True)
