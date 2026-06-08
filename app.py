@@ -19,7 +19,7 @@ app = Flask(__name__)
 
 # --- SİSTEM AYARLARI VE BAĞLANTILAR ---
 NEWSDATA_API_KEY = "pub_43034969efcc5b0267f56cf8f5413df18b955"
-POSTGRES_URI = "postgresql://postgres.pgzgqtzrvbzxlbdkrmyq:KENDI_SIFREN@aws-0-eu-central-1.pooler.supabase.com:6543/postgres"
+POSTGRES_URI = "postgresql://postgres.pgzgqtzrvbzxlbdkrmyq:meoBKAAQ8aywkn83@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres"
 
 # --- MODELLERİN HAFIZAYA ALINMASI ---
 try:
