@@ -92,46 +92,48 @@ def teyit_sayfasini_oku(link):
 # --- TEYİT.ORG ARŞİV ARAMA (Newsdata bulamazsa devreye girer) ---
 def teyit_org_arsiv_ara(haber_basligi):
     """
-    Teyit.org'un kendi arşivinde haberi arar.
-    Önce WP REST API, sonra ?s= scraping dener.
+    Teyit.org WordPress RSS arama feed'i (?s=) üzerinden arama yapar.
+    Cloudflare zırhını yasal ve temiz yoldan baypas eder.
     """
-    sorgu = requests.utils.quote(haber_basligi)
-
-    # Yöntem 1: WordPress REST API
     try:
-        api_url = f"https://teyit.org/wp-json/wp/v2/posts?search={sorgu}&per_page=3&_fields=link,title"
-        r = requests.get(api_url, headers=HEADERS, timeout=6)
+        sorgu = requests.utils.quote(haber_basligi)
+        rss_url = f"https://teyit.org/feed/?s={sorgu}"
+        
+        # RSS beslemeleri ham veri olduğu için standart requests ile şak diye açılır
+        r = requests.get(rss_url, headers=HEADERS, timeout=8)
+        print(f"   Teyit RSS status: {r.status_code}")
+        
         if r.status_code == 200:
-            posts = r.json()
-            if posts and isinstance(posts, list):
-                link = posts[0].get("link", "")
-                print(f"✅ Teyit WP-API: {link}")
-                skor, basarili = teyit_sayfasini_oku(link)
-                if basarili:
-                    return skor, f"Teyit.org Arşiv (WP-API)"
+            # lxml kütüphanesiyle XML ağacını parçalıyoruz
+            soup = BeautifulSoup(r.text, 'xml')
+            items = soup.find_all("item")
+            print(f"   RSS item sayısı: {len(items)}")
+            
+            if items:
+                ilk_item = items[0]
+                link = ilk_item.find("link").text if ilk_item.find("link") else "Link yok"
+                print(f"   🎯 RSS Hedef Link Yakalandı: {link}")
+                
+                # <category> etiketlerini ve tüm item içeriğini (özet, başlık) birleştirip tarıyoruz
+                kategoriler = [cat.text.lower() for cat in ilk_item.find_all("category")]
+                ham_item_metni = str(ilk_item).lower()
+                
+                print(f"   🔬 RSS Kategorileri: {kategoriler}")
+                
+                # Önce kategorilerde net mühür arıyoruz (En garanti yer)
+                for kat in kategoriler:
+                    skor = etiketten_skor_cikart(kat)
+                    if skor in [0.0, 100.0, 35.0]: # Geçerli bir mühür bulduysa
+                        return skor, f"Teyit.org Arşiv (RSS)"
+                        
+                # Eğer kategorilerden çıkmazsa tüm XML parçasında (özet metninde) aratıyoruz
+                skor = etiketten_skor_cikart(ham_item_metni)
+                return skor, f"Teyit.org Arşiv (RSS)"
+                
     except Exception as e:
-        print(f"Teyit WP-API hatası: {e}")
-
-    # Yöntem 2: Arama sayfası scraping
-    try:
-        arama_url = f"https://teyit.org/?s={sorgu}"
-        r = requests.get(arama_url, headers=HEADERS, timeout=6)
-        print(f"   Teyit WP-API status: {r.status_code}")  # ← EKLE
-        print(f"   Teyit WP-API yanıt: {r.text[:200]}")    # ← EKLE
-        if r.status_code == 200:
-            soup = BeautifulSoup(r.text, 'html.parser')
-            link_el = soup.find("a", href=lambda h: h and "/analiz/" in h)
-            if link_el:
-                link = link_el["href"]
-                print(f"✅ Teyit Arama Scrape: {link}")
-                skor, basarili = teyit_sayfasini_oku(link)
-                if basarili:
-                    return skor, "Teyit.org Arşiv (Arama)"
-    except Exception as e:
-        print(f"Teyit arama scrape hatası: {e}")
-
+        print(f"Teyit RSS hatası: {e}")
+        
     return None, "Teyit.org'da bulunamadı"
-
 # --- DOĞRULUK PAYI SCRAPING ---
 def dogrulukpayi_tara(kaynak_linki):
     try:
@@ -157,16 +159,20 @@ def dogrulukpayi_tara(kaynak_linki):
 def medya_tara(haber_basligi):
     """
     Döndürdüğü değer: (api_skoru: float | None, kaynak_metni: str)
-    Görseldeki akış şemasıyla %100 uyumlu çalışan iki döngülü öncelik yapısı.
+    
+    YENİ AKIŞ HİYERARŞİSİ:
+    1. Newsdata API'den güncel sonuçları çek.
+    2. (ÖNCELİK 1): Sonuçlarda TRT / AA / BBC gibi Güvenilir Medya var mı? -> Varsa direkt API = 100 döndür.
+    3. (ÖNCELİK 2): Güvenilir medyada yoksa, Teyit.org (RSS) veya Doğruluk Payı platformlarında analiz edilmiş mi bak.
+    4. Hiçbir şey bulunamazsa -> API = None (Sadece NLP devreye girer).
     """
     guvenilir_kaynaklar = [
         "aa.com.tr", "trthaber.com", "bbc.com", "bbc.com/turkce",
         "sozcu.com.tr", "hurriyet.com.tr", "milliyet.com.tr",
         "haberturk.com", "ntv.com.tr", "cumhuriyet.com.tr"
     ]
-    dogrulama_platformlari = ["teyit.org", "dogrulukpayi.com"]
 
-    # --- ADIM 1: Newsdata API'den Sonuçları Çek ---
+    # --- ADIM 1: Newsdata API Sonuçlarını Çek ---
     sonuclar = []
     try:
         url = f"https://newsdata.io/api/1/latest?apikey={NEWSDATA_API_KEY}&q={requests.utils.quote(haber_basligi)}&language=tr"
@@ -177,42 +183,44 @@ def medya_tara(haber_basligi):
     except Exception as e:
         print(f"Newsdata API hatası: {e}")
 
-    # --- ADIM 2: Sonuçları İncele ---
     aranan_baslik = haber_basligi.lower()
 
-    # 2a) --- Önce doğrulama platformlarını tara (Mutlak Öncelik) ---
-    for sonuc in sonuclar:
-        kaynak_linki = sonuc.get("link", "").lower()
-        if any(domain in kaynak_linki for domain in dogrulama_platformlari):
-            print(f"   Doğrulama platformu bulundu: {kaynak_linki}")
-            if "teyit.org" in kaynak_linki:
-                skor, basarili = teyit_sayfasini_oku(kaynak_linki)
-            else:
-                skor, basarili = dogrulukpayi_tara(kaynak_linki)
-            if basarili:
-                return skor, "Canlı Analiz (Hibrit: NLP + Doğrulama Platformu)"
-
-    # 2b) --- Sonra güvenilir medyaya bak (Eğer doğrulama platformu yoksa) ---
+    # --- ADIM 2: (ÖNCELİK 1) Güvenilir Haber Siteleri Kontrolü ---
+    # Haber ana akım güvenilir medyada yer alıyorsa doğrudan doğrulanmış kabul ediyoruz.
     for sonuc in sonuclar:
         kaynak_linki = sonuc.get("link", "").lower()
         bulunan_baslik = sonuc.get("title", "").lower()
         ortak_kelimeler = set(bulunan_baslik.split()) & set(aranan_baslik.split())
+        
         if any(domain in kaynak_linki for domain in guvenilir_kaynaklar) and len(ortak_kelimeler) >= 2:
-            print(f"   Güvenilir medya bulundu: {kaynak_linki}")
+            print(f"   🟢 Güvenilir medya öncelikli olarak onaylandı: {kaynak_linki}")
             return 100.0, "Canlı Analiz (Hibrit: NLP + Güvenilir Medya)"
 
-    # --- ADIM 3: Newsdata'da hiçbir şey bulunamazsa teyit.org arşivini doğrudan ara ---
-    print("   Newsdata'da doğrulama platformu bulunamadı, Teyit.org arşivi aranıyor...")
+    # --- ADIM 3: (ÖNCELİK 2) Doğrulama Platformları Kontrolü ---
+    # Eğer güvenilir haber sitelerinde yoksa, şimdi yalanlama/teyit arşivlerine bakıyoruz.
+    print("   ℹ️ Güvenilir medyada bulunamadı, Doğrulama Platformları aranıyor...")
+
+    # 3a) Doğruluk Payı Kontrolü (Newsdata sonuçları üzerinden)
+    for sonuc in sonuclar:
+        kaynak_linki = sonuc.get("link", "").lower()
+        if "dogrulukpayi.com" in kaynak_linki:
+            print(f"   🎯 Doğruluk Payı linki bulundu: {kaynak_linki}")
+            skor, basarili = dogrulukpayi_tara(kaynak_linki)
+            if basarili:
+                return skor, "Canlı Analiz (Hibrit: NLP + Doğruluk Payı)"
+
+    # 3b) Teyit.org Kontrolü (Cloudflare korumasını aşan akıllı RSS Motoru ile)
+    # Newsdata'da çıkmasa bile doğrudan Teyit'in kendi arama RSS feed'ine gidiyoruz.
+    print("   🚀 Teyit.org RSS Arşivi sorgulanıyor...")
     teyit_skor, teyit_aciklama = teyit_org_arsiv_ara(haber_basligi)
     if teyit_skor is not None:
         return teyit_skor, f"Canlı Analiz (Hibrit: NLP + {teyit_aciklama})"
 
-    # --- ADIM 4: Hiçbir şey bulunamadıysa (API = None) ---
+    # --- ADIM 4: Hiçbir Şey Bulunamazsa (API = None) ---
     if sonuclar:
         return None, "Canlı Analiz (Hibrit: NLP + Genel Medya - Eşleşme Yok)"
     else:
         return None, "Canlı Analiz (Hibrit: NLP + Medyada Bulunamadı)"
-
 
 # --- ANA SAYFA VE ANALİZ MOTORU ---
 @app.route("/", methods=["GET", "POST"])
