@@ -111,23 +111,43 @@ def teyit_org_ara(haber_basligi):
 
 # --- TEYİT.ORG SAYFA OKUMA FONKSİYONU ---
 def teyit_sayfasini_oku(link):
-    """
-    Verilen teyit.org linkine gidip etiket mührünü okur.
-    Döndürdüğü değer: (skor: float, basarili: bool)
-    """
     try:
         r = requests.get(link, headers=HEADERS, timeout=6)
+
         if r.status_code != 200:
             return None, False
-        soup = BeautifulSoup(r.text, 'html.parser')
+
+        html = r.text.lower()
+
+        olumsuz = [
+            "yanlış",
+            "yanlis",
+            "yalan",
+            "doğru değil",
+            "dogru degil",
+            "asılsız",
+            "asilsiz",
+            "manipülasyon",
+            "manipulasyon",
+            "montaj"
+        ]
+
+        if any(k in html for k in olumsuz):
+            print("Teyit sayfasında yanlış etiketi bulundu.")
+            return 0.0, True
+
+        soup = BeautifulSoup(html, "html.parser")
+
         element = soup.find("span", class_="text-uppercase")
+
         if element:
             muhur = element.get_text(strip=True).lower()
-            print(f"   Teyit mühürü: '{muhur}'")
             return etiketten_skor_cikart(muhur), True
-        return 40.0, True  # Sayfa açıldı ama etiket bulunamadı
+
+        return 40.0, True
+
     except Exception as e:
-        print(f"Teyit sayfa okuma hatası: {e}")
+        print(e)
         return None, False
 
 # --- DOĞRULUK PAYI SCRAPING FONKSİYONU ---
