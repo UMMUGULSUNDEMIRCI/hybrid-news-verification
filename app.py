@@ -19,7 +19,7 @@ app = Flask(__name__)
 
 # --- SİSTEM AYARLARI ---
 NEWSDATA_API_KEY = "pub_43034969efcc5b0267f56cf8f5413df18b955"
-POSTGRES_URI = "postgresql://postgres.pgzgqtzrvbzxlbdkrmyq:KENDI_SIFREN@aws-0-eu-central-1.pooler.supabase.com:6543/postgres"
+POSTGRES_URI = "postgresql://postgres.pgzgqtzrvbzxlbdkrmyq:meoBKAAQ8aywkn83@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
 # --- MODELLERİN HAFIZAYA ALINMASI ---
@@ -48,11 +48,14 @@ def temizle_ve_vektorize_et(text, model, vector_size=100):
 
 # --- ETİKET OKUMA YARDIMCI FONKSİYONU ---
 def etiketten_skor_cikart(bulunan_muhur):
-    """Okunan mühür metninden skor döndürür."""
+    bulunan_muhur = bulunan_muhur.lower().strip()
+    bulunan_muhur = bulunan_muhur.replace("i\u0307", "i")  # İ → i encoding güvenliği
+
     olumsuz = [
-        "yanlış", "yanlis", "yalan", "uydurma", "asılsız", "asilsiz",
-        "iddia yanlış", "doğru değil", "dogru degil", "gerçek değil",
-        "manipülasyon", "manipulasyon", "montaj", "parodi"
+        "yanlış", "yanliş", "yanlis", "yalan", "uydurma",
+        "asılsız", "asilsiz", "iddia yanlış", "doğru değil",
+        "dogru degil", "gerçek değil", "manipülasyon",
+        "manipulasyon", "montaj", "parodi"
     ]
     olumlu = ["doğru", "dogru", "gerçek", "gercek", "onaylandı", "doğrulandı"]
     belirsiz = ["kısmen", "yanıltıcı", "bağlam", "abartı", "karma"]
@@ -64,18 +67,41 @@ def etiketten_skor_cikart(bulunan_muhur):
     elif any(k in bulunan_muhur for k in belirsiz):
         return 35.0
     else:
-        return 40.0  # Etiket okunamadı ama sayfa açıldı
+        return 40.0
 
-# --- TEYİT.ORG DOĞRUDAN ARAMA FONKSİYONU (Newsdata'dan bağımsız) ---
-def teyit_org_ara(haber_basligi):
+# --- TEYİT.ORG SAYFA OKUMA ---
+def teyit_sayfasini_oku(link):
+    try:
+        r = requests.get(link, headers=HEADERS, timeout=6)
+        if r.status_code != 200:
+            return None, False
+        soup = BeautifulSoup(r.text, 'html.parser')
+
+        # Debug: tüm etiketleri logla
+        elementler = soup.find_all("span", class_="text-uppercase")
+        print(f"   text-uppercase span sayısı: {len(elementler)}")
+        for el in elementler:
+            print(f"   → '{el.get_text(strip=True)}'")
+
+        element = soup.find("span", class_="text-uppercase")
+        if element:
+            muhur = element.get_text(strip=True).lower()
+            print(f"   Teyit mühürü: '{muhur}'")
+            return etiketten_skor_cikart(muhur), True
+        return 40.0, True  # Sayfa açıldı ama etiket bulunamadı
+    except Exception as e:
+        print(f"Teyit sayfa okuma hatası: {e}")
+        return None, False
+
+# --- TEYİT.ORG ARŞİV ARAMA (Newsdata bulamazsa devreye girer) ---
+def teyit_org_arsiv_ara(haber_basligi):
     """
     Teyit.org'un kendi arşivinde haberi arar.
-    Önce WordPress REST API'yi dener, başarısız olursa ?s= arama sayfasını scrape eder.
-    Döndürdüğü değer: (skor: float | None, kaynak_aciklama: str)
+    Önce WP REST API, sonra ?s= scraping dener.
     """
     sorgu = requests.utils.quote(haber_basligi)
 
-    # --- YÖNTEM 1: WordPress REST API (en temiz yol) ---
+    # Yöntem 1: WordPress REST API
     try:
         api_url = f"https://teyit.org/wp-json/wp/v2/posts?search={sorgu}&per_page=3&_fields=link,title"
         r = requests.get(api_url, headers=HEADERS, timeout=6)
@@ -86,76 +112,30 @@ def teyit_org_ara(haber_basligi):
                 print(f"✅ Teyit WP-API: {link}")
                 skor, basarili = teyit_sayfasini_oku(link)
                 if basarili:
-                    return skor, f"Teyit.org Arşiv (WP-API): {link}"
+                    return skor, f"Teyit.org Arşiv (WP-API)"
     except Exception as e:
         print(f"Teyit WP-API hatası: {e}")
 
-    # --- YÖNTEM 2: Arama Sayfası Scraping (?s= parametresi) ---
+    # Yöntem 2: Arama sayfası scraping
     try:
         arama_url = f"https://teyit.org/?s={sorgu}"
         r = requests.get(arama_url, headers=HEADERS, timeout=6)
         if r.status_code == 200:
             soup = BeautifulSoup(r.text, 'html.parser')
-            # Arama sonuçlarındaki ilk analiz linkini bul
-            link_elementi = soup.find("a", href=lambda h: h and "/analiz/" in h)
-            if link_elementi:
-                link = link_elementi["href"]
+            link_el = soup.find("a", href=lambda h: h and "/analiz/" in h)
+            if link_el:
+                link = link_el["href"]
                 print(f"✅ Teyit Arama Scrape: {link}")
                 skor, basarili = teyit_sayfasini_oku(link)
                 if basarili:
-                    return skor, f"Teyit.org Arşiv (Arama): {link}"
+                    return skor, "Teyit.org Arşiv (Arama)"
     except Exception as e:
         print(f"Teyit arama scrape hatası: {e}")
 
     return None, "Teyit.org'da bulunamadı"
 
-# --- TEYİT.ORG SAYFA OKUMA FONKSİYONU ---
-def teyit_sayfasini_oku(link):
-    try:
-        r = requests.get(link, headers=HEADERS, timeout=6)
-
-        if r.status_code != 200:
-            return None, False
-
-        html = r.text.lower()
-
-        olumsuz = [
-            "yanlış",
-            "yanlis",
-            "yalan",
-            "doğru değil",
-            "dogru degil",
-            "asılsız",
-            "asilsiz",
-            "manipülasyon",
-            "manipulasyon",
-            "montaj"
-        ]
-
-        if any(k in html for k in olumsuz):
-            print("Teyit sayfasında yanlış etiketi bulundu.")
-            return 0.0, True
-
-        soup = BeautifulSoup(html, "html.parser")
-
-        element = soup.find("span", class_="text-uppercase")
-
-        if element:
-            muhur = element.get_text(strip=True).lower()
-            return etiketten_skor_cikart(muhur), True
-
-        return 40.0, True
-
-    except Exception as e:
-        print(e)
-        return None, False
-
-# --- DOĞRULUK PAYI SCRAPING FONKSİYONU ---
+# --- DOĞRULUK PAYI SCRAPING ---
 def dogrulukpayi_tara(kaynak_linki):
-    """
-    Dogrulukpayi.com sayfasını okur.
-    Döndürdüğü değer: (skor: float, basarili: bool)
-    """
     try:
         r = requests.get(kaynak_linki, headers=HEADERS, timeout=6)
         if r.status_code != 200:
@@ -170,6 +150,69 @@ def dogrulukpayi_tara(kaynak_linki):
     except Exception as e:
         print(f"Doğruluk Payı scrape hatası: {e}")
         return None, False
+
+# ==========================================================
+# ANA NEWSDATA + MEDYA TARAMA FONKSİYONU
+# ==========================================================
+def medya_tara(haber_basligi):
+    """
+    Döndürdüğü değer: (api_skoru: float | None, kaynak_metni: str)
+    Görseldeki akış şemasıyla %100 uyumlu çalışan iki döngülü öncelik yapısı.
+    """
+    guvenilir_kaynaklar = [
+        "aa.com.tr", "trthaber.com", "bbc.com", "bbc.com/turkce",
+        "sozcu.com.tr", "hurriyet.com.tr", "milliyet.com.tr",
+        "haberturk.com", "ntv.com.tr", "cumhuriyet.com.tr"
+    ]
+    dogrulama_platformlari = ["teyit.org", "dogrulukpayi.com"]
+
+    # --- ADIM 1: Newsdata API'den Sonuçları Çek ---
+    sonuclar = []
+    try:
+        url = f"https://newsdata.io/api/1/latest?apikey={NEWSDATA_API_KEY}&q={requests.utils.quote(haber_basligi)}&language=tr"
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            sonuclar = response.json().get("results", [])
+            print(f"   Newsdata: {len(sonuclar)} sonuç bulundu")
+    except Exception as e:
+        print(f"Newsdata API hatası: {e}")
+
+    # --- ADIM 2: Sonuçları İncele ---
+    aranan_baslik = haber_basligi.lower()
+
+    # 2a) --- Önce doğrulama platformlarını tara (Mutlak Öncelik) ---
+    for sonuc in sonuclar:
+        kaynak_linki = sonuc.get("link", "").lower()
+        if any(domain in kaynak_linki for domain in dogrulama_platformlari):
+            print(f"   Doğrulama platformu bulundu: {kaynak_linki}")
+            if "teyit.org" in kaynak_linki:
+                skor, basarili = teyit_sayfasini_oku(kaynak_linki)
+            else:
+                skor, basarili = dogrulukpayi_tara(kaynak_linki)
+            if basarili:
+                return skor, "Canlı Analiz (Hibrit: NLP + Doğrulama Platformu)"
+
+    # 2b) --- Sonra güvenilir medyaya bak (Eğer doğrulama platformu yoksa) ---
+    for sonuc in sonuclar:
+        kaynak_linki = sonuc.get("link", "").lower()
+        bulunan_baslik = sonuc.get("title", "").lower()
+        ortak_kelimeler = set(bulunan_baslik.split()) & set(aranan_baslik.split())
+        if any(domain in kaynak_linki for domain in guvenilir_kaynaklar) and len(ortak_kelimeler) >= 2:
+            print(f"   Güvenilir medya bulundu: {kaynak_linki}")
+            return 100.0, "Canlı Analiz (Hibrit: NLP + Güvenilir Medya)"
+
+    # --- ADIM 3: Newsdata'da hiçbir şey bulunamazsa teyit.org arşivini doğrudan ara ---
+    print("   Newsdata'da doğrulama platformu bulunamadı, Teyit.org arşivi aranıyor...")
+    teyit_skor, teyit_aciklama = teyit_org_arsiv_ara(haber_basligi)
+    if teyit_skor is not None:
+        return teyit_skor, f"Canlı Analiz (Hibrit: NLP + {teyit_aciklama})"
+
+    # --- ADIM 4: Hiçbir şey bulunamadıysa (API = None) ---
+    if sonuclar:
+        return None, "Canlı Analiz (Hibrit: NLP + Genel Medya - Eşleşme Yok)"
+    else:
+        return None, "Canlı Analiz (Hibrit: NLP + Medyada Bulunamadı)"
+
 
 # --- ANA SAYFA VE ANALİZ MOTORU ---
 @app.route("/", methods=["GET", "POST"])
@@ -222,73 +265,16 @@ def index():
     else:
         model_skoru = round(float(np.max(olasiliklar)) * 100, 2)
 
-    # --- ADIM C: TEYİT.ORG DOĞRUDAN ARŞİV TARAMASI (Newsdata'dan bağımsız!) ---
-    api_skoru = None
-    kaynak_metni = ""
-    nlp_sadece_calissin = False
+    # --- ADIM C: MEDYA TARAMA (Senin yeni iki döngülü akışın tetikleniyor) ---
+    api_skoru, kaynak_metni = medya_tara(haber_basligi)
 
-    teyit_skor, teyit_aciklama = teyit_org_ara(haber_basligi)
-    if teyit_skor is not None:
-        api_skoru = teyit_skor
-        kaynak_metni = f"Canlı Analiz (Hibrit: NLP + {teyit_aciklama})"
-        print(f"✅ Teyit.org skoru: {api_skoru} | {teyit_aciklama}")
-    else:
-        print("ℹ️ Teyit.org'da bulunamadı, Newsdata + medya taramasına geçiliyor...")
-
-        # --- ADIM D: NEWSDATA API + MEDYA TARAMASI (Fallback) ---
-        sonuclar = []
-        try:
-            url = f"https://newsdata.io/api/1/latest?apikey={NEWSDATA_API_KEY}&q={requests.utils.quote(haber_basligi)}&language=tr"
-            response = requests.get(url, timeout=5)
-            if response.status_code == 200:
-                sonuclar = response.json().get("results", [])
-        except Exception as api_err:
-            print(f"Newsdata API hatası: {api_err}")
-
-        guvenilir_kaynaklar = [
-            "aa.com.tr", "trthaber.com", "bbc.com/turkce", "sozcu.com.tr",
-            "hurriyet.com.tr", "milliyet.com.tr", "haberturk.com",
-            "ntv.com.tr", "cumhuriyet.com.tr"
-        ]
-
-        api_skoru = 20.0  # varsayılan
-
-        if sonuclar:
-            aranan_baslik = haber_basligi.lower()
-            for sonuc in sonuclar:
-                kaynak_linki = sonuc.get("link", "").lower()
-                bulunan_baslik = sonuc.get("title", "").lower()
-                ortak_kelimeler = set(bulunan_baslik.split()) & set(aranan_baslik.split())
-
-                # Newsdata üzerinden gelen dogrulukpayi linki
-                if "dogrulukpayi.com" in kaynak_linki:
-                    skor, basarili = dogrulukpayi_tara(kaynak_linki)
-                    if basarili:
-                        api_skoru = skor
-                        kaynak_metni = "Canlı Analiz (Hibrit: NLP + Doğruluk Payı Scraping)"
-                    else:
-                        nlp_sadece_calissin = True
-                    break
-
-                # Güvenilir medya kontrolü
-                elif (
-                    any(domain in kaynak_linki for domain in guvenilir_kaynaklar)
-                    and len(ortak_kelimeler) >= 2
-                ):
-                    api_skoru = 90.0
-                    kaynak_metni = "Canlı Analiz (Hibrit: NLP + Güvenilir Medya)"
-                    break
-            else:
-                kaynak_metni = "Canlı Analiz (Hibrit: NLP + Genel Medya Tarama)"
-        else:
-            api_skoru = 5.0
-            kaynak_metni = "Canlı Analiz (Hibrit: NLP + Medyada Bulunamadı)"
-
-    # --- ADIM E: NİHAİ HİBRİT KARAR ---
-    if nlp_sadece_calissin or api_skoru is None:
+    # --- ADIM D: NİHAİ HİBRİT KARAR ---
+    if api_skoru is None:
+        # Hiçbir kaynakta bulunamadı → sadece NLP (%100 ML ağırlığı)
         final_skor = round(model_skoru, 2)
-        kaynak_metni = "Canlı Analiz (Sadece Yapay Zeka - NLP)"
+        kaynak_metni = kaynak_metni.replace("Hibrit: NLP + ", "Sadece NLP - ")
     else:
+        # %50 NLP + %50 API Dengeli Hibrit Formül
         final_skor = round((model_skoru * 0.50) + (api_skoru * 0.50), 2)
 
     if final_skor >= 70:
@@ -298,10 +284,9 @@ def index():
     else:
         karar = "YANLIŞ / DEZENFORMASYON"
 
-    # api_skoru None ise ekranda göstermek için 0 yap
     api_skoru_goster = api_skoru if api_skoru is not None else 0.0
 
-    # --- ADIM F: POSTGRESQL'E KAYDET ---
+    # --- ADIM E: POSTGRESQL'E KAYDET ---
     if conn and cursor:
         try:
             cursor.execute(
