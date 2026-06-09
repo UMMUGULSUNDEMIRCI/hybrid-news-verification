@@ -64,38 +64,27 @@ def etiketten_skor_cikart(bulunan_muhur):
 # --- TEYİT.ORG SAYFA OKUMA ---
 def teyit_sayfasini_oku(link):
     try:
-        scraper = cloudscraper.create_scraper()
-        r = scraper.get(link, timeout=6)
-        
+        r = requests.get(link, headers=HEADERS, timeout=6)
+        print(f"   Teyit HTTP status: {r.status_code}")
         if r.status_code != 200:
-            print(f"⚠️ Teyit sayfa açma hatası: Kodu {r.status_code}")
             return None, False
-            
         soup = BeautifulSoup(r.text, 'html.parser')
-        muhur = ""
 
-        # 🎯 Ekran Görüntüsündeki Tam Hiyerarşi Avı:
-        # Önce analiz sonucunu barındıran üst barı buluyoruz
-        conclusion_bar = soup.find("div", class_=lambda c: c and "conclusion-bar" in c)
-        
-        if conclusion_bar:
-            # Barın içindeki text-uppercase olan span etiketini cımbızlıyoruz
-            element = conclusion_bar.find("span", class_="text-uppercase")
-            if element:
-                muhur = element.get_text(strip=True).lower()
-                print(f"🎯 Nokta Atışı Teyit Mühürü Yakalandı: '{muhur}'")
+        # Kaç tane text-uppercase span var?
+        elementler = soup.find_all("span", class_="text-uppercase")
+        print(f"   text-uppercase span sayısı: {len(elementler)}")
+        for el in elementler:
+            print(f"   → '{el.get_text(strip=True)}'")
 
-        # Eğer yukarıdaki spesifik hiyerarşi bir sebeple ıskalarsa, eski yöntemi yedek (fallback) olarak çalıştır:
-        if not muhur:
-            element = soup.find("span", class_="text-uppercase")
-            if element:
-                muhur = element.get_text(strip=True).lower()
-                print(f"⚠️ Yedek Yöntemle Teyit Mühürü Okundu: '{muhur}'")
+        # Ham HTML'in ilk 2000 karakterini de logla
+        print(f"   HTML önizleme: {r.text[:2000]}")
 
-        if muhur:
+        element = soup.find("span", class_="text-uppercase")
+        if element:
+            muhur = element.get_text(strip=True).lower()
+            print(f"   Teyit mühürü: '{muhur}'")
             return etiketten_skor_cikart(muhur), True
-            
-        return 40.0, True  # Sayfa açıldı ama hiçbir şekilde etiket izole edilemedi
+        return 40.0, True
     except Exception as e:
         print(f"Teyit sayfa okuma hatası: {e}")
         return None, False
