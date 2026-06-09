@@ -49,24 +49,15 @@ def temizle_ve_vektorize_et(text, model, vector_size=100):
 # --- ETİKET OKUMA YARDIMCI FONKSİYONU ---
 def etiketten_skor_cikart(bulunan_muhur):
     bulunan_muhur = bulunan_muhur.lower().strip()
-    bulunan_muhur = bulunan_muhur.replace("i\u0307", "i")  # İ → i encoding güvenliği
 
-    olumsuz = [
-        "yanlış", "yanliş", "yanlis", "yalan", "uydurma",
-        "asılsız", "asilsiz", "iddia yanlış", "doğru değil",
-        "dogru degil", "gerçek değil", "manipülasyon",
-        "manipulasyon", "montaj", "parodi"
-    ]
-    olumlu = ["doğru", "dogru", "gerçek", "gercek", "onaylandı", "doğrulandı"]
-    belirsiz = ["kısmen", "yanıltıcı", "bağlam", "abartı", "karma"]
-
-    if any(k in bulunan_muhur for k in olumsuz):
+    if bulunan_muhur in ["yanlış", "yanlis", "yanliş", "yalan", "uydurma", "asılsız"]:
         return 0.0
-    elif any(k in bulunan_muhur for k in olumlu):
+    elif bulunan_muhur in ["doğru", "dogru", "gerçek", "gercek", "onaylandı"]:
         return 100.0
-    elif any(k in bulunan_muhur for k in belirsiz):
+    elif bulunan_muhur in ["kısmen doğru", "yanıltıcı", "karma"]:
         return 35.0
     else:
+        print(f"   Bilinmeyen mühür: '{bulunan_muhur}'")
         return 40.0
 
 # --- TEYİT.ORG SAYFA OKUMA ---
