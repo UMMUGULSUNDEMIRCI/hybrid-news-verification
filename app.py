@@ -116,6 +116,8 @@ def teyit_org_arsiv_ara(haber_basligi):
     try:
         arama_url = f"https://teyit.org/?s={sorgu}"
         r = requests.get(arama_url, headers=HEADERS, timeout=6)
+        print(f"   Teyit WP-API status: {r.status_code}")  # ← EKLE
+        print(f"   Teyit WP-API yanıt: {r.text[:200]}")    # ← EKLE
         if r.status_code == 200:
             soup = BeautifulSoup(r.text, 'html.parser')
             link_el = soup.find("a", href=lambda h: h and "/analiz/" in h)
@@ -134,6 +136,8 @@ def teyit_org_arsiv_ara(haber_basligi):
 def dogrulukpayi_tara(kaynak_linki):
     try:
         r = requests.get(kaynak_linki, headers=HEADERS, timeout=6)
+        print(f"   Teyit Scrape status: {r.status_code}")  
+        print(f"   Teyit Scrape yanıt: {r.text[:200]}")
         if r.status_code != 200:
             return None, False
         soup = BeautifulSoup(r.text, 'html.parser')
