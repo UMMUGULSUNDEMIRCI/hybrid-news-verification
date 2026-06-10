@@ -3,69 +3,272 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hibrit Haber Doğrulama Sistemi</title>
+    <title>Yapay Zeka ve Canlı Medya Tabanlı Haber Doğrulama</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 700px; margin: 0 auto; background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        h1 { text-align: center; color: #2c3e50; font-size: 24px; margin-bottom: 25px; }
-        label { font-weight: 600; display: block; margin-bottom: 8px; color: #34495e; }
-        input[type="text"], textarea { width: 100%; padding: 12px; margin-bottom: 20px; border: 1px solid #dcdde1; border-radius: 8px; box-sizing: border-box; font-size: 15px; }
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 40px 20px;
+            line-height: 1.5;
+        }
+
+        .container { max-width: 760px; margin: 0 auto; }
+
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
+            padding: 32px;
+            margin-bottom: 24px;
+        }
+
+        h1 { font-size: 24px; font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 8px; text-align: center; }
+        .subtitle { color: var(--text-muted); font-size: 14px; text-align: center; margin-bottom: 32px; }
+        .form-group { margin-bottom: 20px; }
+
+        label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 8px; color: #334155; }
+
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background-color: #fff;
+            color: var(--text);
+            font-size: 15px;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
         textarea { height: 120px; resize: vertical; }
-        button { width: 100%; background-color: #2e7d32; color: white; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
-        button:hover { background-color: #1b5e20; }
-        .error { background-color: #ffebee; color: #c62828; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-weight: 500; }
-        .result-box { margin-top: 30px; border-top: 2px solid #f1f2f6; padding-top: 25px; }
-        .decision { text-align: center; font-size: 20px; font-weight: 800; padding: 15px; border-radius: 8px; background-color: #fff8e1; color: #b78103; margin-bottom: 20px; border: 1px solid #ffe082; }
-        .bar-container { background-color: #e0e0e0; border-radius: 8px; height: 24px; width: 100%; margin-bottom: 15px; position: relative; overflow: hidden; }
-        .bar { height: 100%; border-radius: 8px; text-align: right; padding-right: 10px; line-height: 24px; color: white; font-weight: bold; font-size: 13px; transition: width 0.5s ease-in-out; }
-        .bar.ai { background-color: #42a5f5; }
-        .bar.api { background-color: #26a69a; }
-        .bar.final { background-color: #795548; font-size: 22px; height: 50px; line-height: 50px; text-align: center; padding-right: 0; }
-        .final-wrapper { margin-top: 25px; text-align: center; }
-        .source-tag { display: inline-block; background-color: #37474f; color: white; padding: 4px 10px; border-radius: 20px; font-size: 12px; margin-top: 10px; }
+        .info-text { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+
+        .button-group { display: flex; gap: 12px; margin-top: 8px; }
+
+        button[type="submit"] {
+            flex: 1;
+            background-color: var(--primary);
+            color: white;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        button[type="submit"]:hover { background-color: var(--primary-hover); }
+
+        button[type="button"]#yeni-btn {
+            background-color: #f1f5f9;
+            color: #475569;
+            padding: 14px 24px;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        button[type="button"]#yeni-btn:hover { background-color: #e2e8f0; color: #1e293b; }
+
+        .alert-error {
+            background-color: #fef2f2;
+            border: 1px solid #fca5a5;
+            color: #991b1b;
+            padding: 14px 16px;
+            border-radius: 10px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .result-section { border-top: 1px solid var(--border); margin-top: 32px; padding-top: 32px; }
+
+        .decision-box {
+            text-align: center;
+            padding: 16px;
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 18px;
+            margin-bottom: 28px;
+            letter-spacing: 0.5px;
+        }
+
+        .decision-success { background-color: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
+        .decision-warning { background-color: #fffbb1; border: 1px solid #fde047; color: #854d0e; }
+        .decision-danger  { background-color: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
+
+        .metric-group { margin-bottom: 20px; }
+        .metric-header { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+
+        .progress-container { background-color: #e2e8f0; border-radius: 9999px; height: 16px; width: 100%; overflow: hidden; }
+        .progress-bar { height: 100%; border-radius: 9999px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
+        .bg-ai { background-color: #3b82f6; }
+
+        .medya-box {
+            background-color: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            font-size: 15px;
+            font-weight: 500;
+            color: #1e293b;
+        }
+
+        .medya-box .medya-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+        }
+
+        .final-score-box {
+            text-align: center;
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            color: white;
+            padding: 32px;
+            border-radius: 16px;
+            margin-top: 32px;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
+
+        .final-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: #94a3b8; }
+
+        .final-number {
+            font-size: 54px;
+            font-weight: 800;
+            margin: 12px 0;
+            background: linear-gradient(to right, #38bdf8, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .source-badge {
+            display: inline-block;
+            background-color: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.15);
+            padding: 6px 14px;
+            border-radius: 9999px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #cbd5e1;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>📊 Hibrit Haber Doğrulama Sistemi</h1>
+    <div class="card">
+        <h1>📊 Hibrit Haber Doğrulama Sistemi</h1>
+        <div class="subtitle">NLP Dil Modeli ve Canlı Medya Tarama Entegrasyonu</div>
 
-    {% if error %}
-        <div class="error">⚠️ {{ error }}</div>
-    {% endif %}
+        {% if error %}
+            <div class="alert-error"><strong>Hata:</strong> {{ error }}</div>
+        {% endif %}
 
-    <form action="/" method="POST">
-        <label for="title">Haber Başlığı:</label>
-        <input type="text" id="title" name="title" value="{{ baslik if baslik else '' }}" placeholder="Analiz edilecek haber başlığını girin..." required>
-
-        <label for="content">Haber Detayı / İçeriği (Opsiyonel):</label>
-        <textarea id="content" name="content" placeholder="Eğer varsa haberin detay metnini buraya yapıştırın...">{{ detay if detay else '' }}</textarea>
-
-        <button type="submit">Sistemi Çalıştır ve Analiz Et 🚀</button>
-    </form>
-
-    {% if sonuc %}
-        <div class="result-box">
-            <div class="decision">📋 SİSTEM KARARI: {{ karar }}</div>
-            
-            <label>🤖 Yapay Zeka Üslup ve Semantik Skoru (NLP %50): %{{ model_skoru }}</label>
-            <div class="bar-container">
-                <div class="bar ai" style="width: {{ model_skoru }}%;">%{{ model_skoru }}</div>
+        <form action="/" method="POST" id="main-form">
+            <div class="form-group">
+                <label for="title">Haber Başlığı (Zorunlu)</label>
+                <input type="text" id="title" name="title"
+                    value="{{ baslik if baslik else '' }}"
+                    placeholder="Doğrulanmasını istediğiniz haber başlığını veya iddiayı girin..." required>
+                <div class="info-text">Haber başlığı canlı arama motoru sorgularında anahtar kelime olarak kullanılır.</div>
             </div>
 
-            <label>🌐 Canlı Medya ve Otorite Kanıt Skoru (API/Scraping %50): %{{ api_skoru }}</label>
-            <div class="bar-container">
-                <div class="bar api" style="width: {{ api_skoru }}%;">%{{ api_skoru }}</div>
+            <div class="form-group">
+                <label for="content">Haber İçeriği / Detay Metni (Opsiyonel)</label>
+                <textarea id="content" name="content"
+                    placeholder="Eğer varsa, haberin alt metnini veya sosyal medyadaki paylaşım detayını buraya yapıştırın...">{{ detay if detay else '' }}</textarea>
+                <div class="info-text">Detay metni, Yapay Zeka (NLP) modelinin semantik analiz başarısını artırır.</div>
             </div>
 
-            <div class="final-wrapper">
-                <label>🏁 HİBRİT HESAPLANAN NİHAİ DOĞRULUK ORANI</label>
-                <div style="font-size: 48px; font-weight: 900; color: #3e2723; margin: 10px 0;">%{{ final_skor }}</div>
-                <div class="source-tag">Veri İşleme Tipi: {{ kaynak }}</div>
+            <div class="button-group">
+                <button type="submit">Sistem Analizini Başlat 🚀</button>
+                <button type="button" id="yeni-btn" onclick="formuTemizle()">🆕 Yeni</button>
             </div>
-        </div>
-    {% endif %}
+        </form>
+
+        {% if sonuc %}
+            <div class="result-section">
+
+                <div class="decision-box
+                    {% if 'GÜVENİLİR' in karar %}decision-success
+                    {% elif 'ŞÜPHELİ' in karar %}decision-warning
+                    {% else %}decision-danger{% endif %}">
+                    SİSTEM KARARI: {{ karar }}
+                </div>
+
+                <div class="metric-group">
+                    <div class="metric-header">
+                        <span>🤖 Yapay Zeka NLP Modeli Skoru</span>
+                        <span>%{{ model_skoru }}</span>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar bg-ai" style="width: {{ model_skoru }}%;"></div>
+                    </div>
+                </div>
+
+                <div class="medya-box">
+                    <div class="medya-label">🌐 Canlı Medya Tarama Sonucu</div>
+                    {{ medya_durumu }}
+                </div>
+
+                <div class="final-score-box">
+                    <div class="final-title">Yapay Zeka Doğruluk Skoru</div>
+                    <div class="final-number">%{{ model_skoru }}</div>
+                    <div class="source-badge">Veri İşlem Kanalı: {{ kaynak }}</div>
+                </div>
+
+            </div>
+        {% endif %}
+    </div>
 </div>
+
+<script>
+    function formuTemizle() {
+        document.getElementById("title").value = "";
+        document.getElementById("content").value = "";
+        document.getElementById("title").focus();
+
+        // Sonuç paneli varsa gizle
+        const resultSection = document.querySelector(".result-section");
+        if (resultSection) {
+            resultSection.style.display = "none";
+        }
+
+        // Hata mesajı varsa gizle
+        const error = document.querySelector(".alert-error");
+        if (error) {
+            error.style.display = "none";
+        }
+    }
+</script>
 
 </body>
 </html>
