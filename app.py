@@ -27,7 +27,7 @@ try:
     label_encoder = joblib.load(os.path.join(BASE_DIR, "label_encoder.pkl"))
     print(f"Modeller başarıyla bağlandı. Sınıflar: {list(label_encoder.classes_)}")
 except Exception as e:
-    print(f" Model yükleme hatası: {e}")
+    print(f"Model yükleme hatası: {e}")
     exit(1)
 
 # --- METİN ÖN İŞLEME ---
@@ -48,7 +48,7 @@ def medya_tara(haber_basligi):
     Döndürdüğü değer: medya_durumu (str)
 
     Olası çıktılar:
-    - " Güvenilir medyada yayınlandı: aa.com.tr, ntv.com.tr"
+    - "Güvenilir medyada yayınlandı: aa.com.tr, ntv.com.tr"
     - "Yalnızca doğrulama platformunda yayınlandı: teyit.org"
     - "Medyada sonuç bulunamadı"
     """
