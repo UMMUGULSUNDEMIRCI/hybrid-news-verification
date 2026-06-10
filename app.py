@@ -163,6 +163,7 @@ def index():
     )
 
     # --- ADIM C: MEDYA TARAMA ---
+    print(f"   medya_tara çağrılıyor: '{haber_basligi}'")
     medya_durumu = medya_tara(haber_basligi)
     print(f"   Medya durumu: {medya_durumu}")
 
