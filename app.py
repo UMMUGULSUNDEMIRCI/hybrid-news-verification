@@ -14,7 +14,7 @@ nltk.download('punkt_tab', quiet=True)
 from nltk.corpus import stopwords
 
 app = Flask(__name__)
-                    
+
 NEWSDATA_API_KEY = "pub_1740d5ba773b4c15b4c65f55ae55b886"
 POSTGRES_URI = "postgresql://postgres.pgzgqtzrvbzxlbdkrmyq:meoBKAAQ8aywkn83@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
@@ -41,6 +41,19 @@ def temizle_ve_vektorize_et(text, model, vector_size=100):
     vektorler = [model.wv[k] for k in kelimeler if k in model.wv]
     return np.mean(vektorler, axis=0) if vektorler else np.zeros(vector_size)
 
+# --- NEWSDATA ARAMASI İÇİN SORGU TEMİZLEME ---
+def sorgu_icin_temizle(text):
+    """
+    Newsdata araması için başlığı sadeleştirir:
+    noktalama işaretlerini temizler, stopword'leri çıkarır,
+    ilk 6 anlamlı kelimeyi alır.
+    """
+    text = text.lower()
+    text = re.sub(r'[^\w\sçğıöşü]', '', text)
+    stop_words = set(stopwords.words('turkish'))
+    kelimeler = [k for k in text.split() if k not in stop_words and len(k) > 2]
+    return " ".join(kelimeler[:6])
+
 # --- NEWSDATA MEDYA TARAMA ---
 def medya_tara(haber_basligi):
     """
@@ -60,11 +73,13 @@ def medya_tara(haber_basligi):
     dogrulama_platformlari = ["teyit.org", "dogrulukpayi.com"]
 
     sonuclar = []
+    sorgu_metni = sorgu_icin_temizle(haber_basligi)
+    print(f">>> Temizlenmiş sorgu: '{sorgu_metni}'")
     try:
         url = (
             f"https://newsdata.io/api/1/latest"
             f"?apikey={NEWSDATA_API_KEY}"
-            f"&q={requests.utils.quote(haber_basligi)}"
+            f"&q={requests.utils.quote(sorgu_metni)}"
             f"&language=tr"
         )
         r = requests.get(url, timeout=8)
@@ -75,9 +90,9 @@ def medya_tara(haber_basligi):
         print(f"   Newsdata API hatası: {e}")
 
     if not sonuclar:
-        return "Medyada sonuç bulunamadı"
+        return "❓ Medyada sonuç bulunamadı"
 
-    aranan_kelimeler = set(haber_basligi.lower().split())
+    aranan_kelimeler = set(sorgu_metni.split())
     bulunan_guvenilir = []
     bulunan_dogrulama = []
 
@@ -163,7 +178,6 @@ def index():
     )
 
     # --- ADIM C: MEDYA TARAMA ---
-    print(f"   medya_tara çağrılıyor: '{haber_basligi}'")
     medya_durumu = medya_tara(haber_basligi)
     print(f"   Medya durumu: {medya_durumu}")
 
