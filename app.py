@@ -22,9 +22,9 @@ HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/
 # --- MODELLERİN HAFIZAYA ALINMASI ---
 try:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    w2v_model = Word2Vec.load(os.path.join(BASE_DIR, "word2vec_teyit.model"))
-    rf_model = joblib.load(os.path.join(BASE_DIR, "random_forest_final.pkl"))
-    label_encoder = joblib.load(os.path.join(BASE_DIR, "label_encoder.pkl"))
+    w2v_model = Word2Vec.load(os.path.join(BASE_DIR, "word2vec_teyit_bir.model"))
+    rf_model = joblib.load(os.path.join(BASE_DIR, "random_forest_final_bir.pkl"))
+    label_encoder = joblib.load(os.path.join(BASE_DIR, "label_encoder_bir.pkl"))
     print(f"✅ Modeller başarıyla bağlandı. Sınıflar: {list(label_encoder.classes_)}")
 except Exception as e:
     print(f"❌ Model yükleme hatası: {e}")
