@@ -14,8 +14,8 @@ nltk.download('punkt_tab', quiet=True)
 from nltk.corpus import stopwords
 
 app = Flask(__name__)
-
-NEWSDATA_API_KEY = "pub_43034969efcc5b0267f56cf8f5413df18b955"
+                    
+NEWSDATA_API_KEY = "pub_1740d5ba773b4c15b4c65f55ae55b886"
 POSTGRES_URI = "postgresql://postgres.pgzgqtzrvbzxlbdkrmyq:meoBKAAQ8aywkn83@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
