@@ -25,9 +25,9 @@ try:
     w2v_model = Word2Vec.load(os.path.join(BASE_DIR, "word2vec_teyit.model"))
     rf_model = joblib.load(os.path.join(BASE_DIR, "random_forest_final.pkl"))
     label_encoder = joblib.load(os.path.join(BASE_DIR, "label_encoder.pkl"))
-    print(f"Modeller başarıyla bağlandı. Sınıflar: {list(label_encoder.classes_)}")
+    print(f"✅ Modeller başarıyla bağlandı. Sınıflar: {list(label_encoder.classes_)}")
 except Exception as e:
-    print(f"Model yükleme hatası: {e}")
+    print(f"❌ Model yükleme hatası: {e}")
     exit(1)
 
 # --- METİN ÖN İŞLEME ---
@@ -52,7 +52,7 @@ def sorgu_icin_temizle(text):
     text = re.sub(r'[^\w\sçğıöşü]', '', text)
     stop_words = set(stopwords.words('turkish'))
     kelimeler = [k for k in text.split() if k not in stop_words and len(k) > 2]
-    return " ".join(kelimeler[:6])
+    return " OR ".join(kelimeler[:5])
 
 # --- NEWSDATA MEDYA TARAMA ---
 def medya_tara(haber_basligi):
@@ -90,9 +90,9 @@ def medya_tara(haber_basligi):
         print(f"   Newsdata API hatası: {e}")
 
     if not sonuclar:
-        return "❓ Medyada sonuç bulunamadı"
+        return "Medyada sonuç bulunamadı"
 
-    aranan_kelimeler = set(sorgu_metni.split())
+    aranan_kelimeler = set(k for k in sorgu_metni.lower().split() if k != "or")
     bulunan_guvenilir = []
     bulunan_dogrulama = []
 
@@ -115,13 +115,13 @@ def medya_tara(haber_basligi):
 
     if bulunan_guvenilir:
         siteler = ", ".join(sorted(set(bulunan_guvenilir)))
-        return f"Güvenilir medyada yayınlandı: {siteler}"
+        return f"✅ Güvenilir medyada yayınlandı: {siteler}"
 
     if bulunan_dogrulama:
         siteler = ", ".join(sorted(set(bulunan_dogrulama)))
-        return f"Yalnızca doğrulama platformunda yayınlandı: {siteler}"
+        return f"⚠️ Yalnızca doğrulama platformunda yayınlandı: {siteler}"
 
-    return "Medyada sonuç bulunamadı"
+    return "❓ Medyada sonuç bulunamadı"
 
 
 # --- ANA SAYFA ---
@@ -157,7 +157,7 @@ def index():
                 kaynak="Bulut Veritabanı (Önbellek)"
             )
     except Exception as db_err:
-        print(f"Önbellek okuma hatası: {db_err}")
+        print(f"⚠️ Önbellek okuma hatası: {db_err}")
         conn = None
         cursor = None
 
