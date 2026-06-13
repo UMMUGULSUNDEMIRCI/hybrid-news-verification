@@ -25,9 +25,9 @@ try:
     w2v_model = Word2Vec.load(os.path.join(BASE_DIR, "word2vec_teyit_bir.model"))
     rf_model = joblib.load(os.path.join(BASE_DIR, "random_forest_final_bir.pkl"))
     label_encoder = joblib.load(os.path.join(BASE_DIR, "label_encoder_bir.pkl"))
-    print(f"✅ Modeller başarıyla bağlandı. Sınıflar: {list(label_encoder.classes_)}")
+    print(f" Modeller başarıyla bağlandı. Sınıflar: {list(label_encoder.classes_)}")
 except Exception as e:
-    print(f"❌ Model yükleme hatası: {e}")
+    print(f" Model yükleme hatası: {e}")
     exit(1)
 
 # --- METİN ÖN İŞLEME ---
@@ -68,9 +68,16 @@ def medya_tara(haber_basligi):
     guvenilir_kaynaklar = [
         "aa.com.tr", "trthaber.com", "bbc.com",
         "sozcu.com.tr", "hurriyet.com.tr", "milliyet.com.tr",
-        "haberturk.com", "ntv.com.tr", "cumhuriyet.com.tr"
+        "haberturk.com", "ntv.com.tr", "cumhuriyet.com.tr" ,"reuters.com",
+        "apnews.com","dw.com","euronews.com","karar.com","t24.com.tr",
+        "gazeteduvar.com.tr","medyascope.tv","cnnturk.com","indyturk.com"
+        "haberler.com"
     ]
-    dogrulama_platformlari = ["teyit.org", "dogrulukpayi.com"]
+    dogrulama_platformlari = ["teyit.org", "dogrulukpayi.com","malumatfurus.org",
+                                "factcheck.org","snopes.com","politifact.com",
+                              "politifact.com","fullfact.org","afp.com","reuters.com/fact-check",
+                              "apnews.com/hub/ap-fact-check"
+    ]
 
     sorgu_metni = sorgu_icin_temizle(haber_basligi)
     print(f">>> DDG sorgusu: '{sorgu_metni}'")
@@ -155,7 +162,7 @@ def index():
                 kaynak="Bulut Veritabanı (Önbellek)"
             )
     except Exception as db_err:
-        print(f"⚠️ Önbellek okuma hatası: {db_err}")
+        print(f"Önbellek okuma hatası: {db_err}")
         conn = None
         cursor = None
 
