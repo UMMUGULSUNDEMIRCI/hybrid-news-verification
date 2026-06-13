@@ -115,13 +115,13 @@ def medya_tara(haber_basligi):
 
     if bulunan_guvenilir:
         siteler = ", ".join(sorted(set(bulunan_guvenilir)))
-        return f"✅ Güvenilir medyada yayınlandı: {siteler}"
+        return f"Güvenilir medyada yayınlandı: {siteler}"
 
     if bulunan_dogrulama:
         siteler = ", ".join(sorted(set(bulunan_dogrulama)))
-        return f"⚠️ Yalnızca doğrulama platformunda yayınlandı: {siteler}"
+        return f"Yalnızca doğrulama platformunda yayınlandı: {siteler}"
 
-    return "❓ Medyada sonuç bulunamadı"
+    return "Medyada sonuç bulunamadı"
 
 
 # --- ANA SAYFA ---
