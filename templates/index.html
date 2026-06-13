@@ -141,8 +141,8 @@
             margin-top: 28px;
         }
 
-        button[type="submit"] {
-            flex: 3;
+        button[type="submit"], button[type="button"]#yeni-btn {
+            flex: 1;
             background: linear-gradient(135deg, #6366f1, #4f46e5);
             color: white;
             padding: 16px;
@@ -154,21 +154,7 @@
             box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
             transition: opacity 0.2s ease;
         }
-        button[type="submit"]:hover { opacity: 0.92; }
-
-        button[type="button"]#yeni-btn {
-            flex: 1;
-            background-color: #fff;
-            color: #4b5563;
-            padding: 16px;
-            border: 1.5px solid var(--border);
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        button[type="button"]#yeni-btn:hover { background-color: #f3f4f6; }
+        button[type="submit"]:hover, button[type="button"]#yeni-btn:hover { opacity: 0.92; }
 
         /* DECISION BOX (under form, full width on left column) */
         .decision-container {
@@ -179,7 +165,6 @@
             border-radius: 16px;
             background-color: #f0fdf4;
             border: 1px solid #bbf7d0;
-            margin-top: 24px;
         }
 
         .decision-icon-box {
@@ -440,34 +425,32 @@
                         <button type="button" id="yeni-btn" onclick="formuTemizle()">Yeni Analiz</button>
                     </div>
                 </form>
-
-                {% if sonuc %}
-                    <div class="decision-container
-                        {% if 'GÜVENİLİR' in karar %}{% elif 'ŞÜPHELİ' in karar %}decision-warning-box{% else %}decision-danger-box{% endif %}">
-                        <div class="decision-icon-box">
-                            {% if 'GÜVENİLİR' in karar %}✓{% elif 'ŞÜPHELİ' in karar %}!{% else %}✕{% endif %}
-                        </div>
-                        <div>
-                            <div class="decision-badge">Sistem Kararı</div>
-                            <div class="decision-title">{{ karar }}</div>
-                            <div class="decision-desc">
-                                {% if 'GÜVENİLİR' in karar %}
-                                    Yapay zeka modeli bu haberin doğruluk olasılığını yüksek olarak değerlendirdi.
-                                {% elif 'ŞÜPHELİ' in karar %}
-                                    Yapay zeka modeli bu haber için yeterli kanıt bulamadı, dikkatli olun.
-                                {% else %}
-                                    Yapay zeka modeli bu haberin yanlış/dezenformasyon olma olasılığını yüksek buldu.
-                                {% endif %}
-                            </div>
-                        </div>
-                    </div>
-                {% endif %}
             </div>
         </div>
 
         <!-- SAĞ: SONUÇLAR -->
         <div class="right-column">
             {% if sonuc %}
+                <div class="decision-container
+                    {% if 'GÜVENİLİR' in karar %}{% elif 'ŞÜPHELİ' in karar %}decision-warning-box{% else %}decision-danger-box{% endif %}">
+                    <div class="decision-icon-box">
+                        {% if 'GÜVENİLİR' in karar %}✓{% elif 'ŞÜPHELİ' in karar %}!{% else %}✕{% endif %}
+                    </div>
+                    <div>
+                        <div class="decision-badge">Sistem Kararı</div>
+                        <div class="decision-title">{{ karar }}</div>
+                        <div class="decision-desc">
+                            {% if 'GÜVENİLİR' in karar %}
+                                Yapay zeka modeli bu haberin doğruluk olasılığını yüksek olarak değerlendirdi.
+                            {% elif 'ŞÜPHELİ' in karar %}
+                                Yapay zeka modeli bu haber için yeterli kanıt bulamadı, dikkatli olun.
+                            {% else %}
+                                Yapay zeka modeli bu haberin yanlış/dezenformasyon olma olasılığını yüksek buldu.
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
                 <div class="score-box">
                     <div class="score-left">
                         <div class="score-title">Yapay Zeka Doğruluk Skoru</div>
