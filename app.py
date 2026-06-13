@@ -4,7 +4,7 @@ import psycopg2
 import requests
 import joblib
 import numpy as np
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session, redirect, url_for
 from gensim.models import Word2Vec
 from ddgs import DDGS
 import nltk
@@ -15,6 +15,7 @@ nltk.download('punkt_tab', quiet=True)
 from nltk.corpus import stopwords
 
 app = Flask(__name__)
+app.secret_key = "hibrit-haber-dogrulama-gizli-anahtar-2026"
 
 POSTGRES_URI = "postgresql://postgres.pgzgqtzrvbzxlbdkrmyq:meoBKAAQ8aywkn83@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
@@ -25,9 +26,9 @@ try:
     w2v_model = Word2Vec.load(os.path.join(BASE_DIR, "word2vec_teyit_bir.model"))
     rf_model = joblib.load(os.path.join(BASE_DIR, "random_forest_final_bir.pkl"))
     label_encoder = joblib.load(os.path.join(BASE_DIR, "label_encoder_bir.pkl"))
-    print(f" Modeller başarıyla bağlandı. Sınıflar: {list(label_encoder.classes_)}")
+    print(f"✅ Modeller başarıyla bağlandı. Sınıflar: {list(label_encoder.classes_)}")
 except Exception as e:
-    print(f" Model yükleme hatası: {e}")
+    print(f"❌ Model yükleme hatası: {e}")
     exit(1)
 
 # --- METİN ÖN İŞLEME ---
@@ -68,16 +69,9 @@ def medya_tara(haber_basligi):
     guvenilir_kaynaklar = [
         "aa.com.tr", "trthaber.com", "bbc.com",
         "sozcu.com.tr", "hurriyet.com.tr", "milliyet.com.tr",
-        "haberturk.com", "ntv.com.tr", "cumhuriyet.com.tr" ,"reuters.com",
-        "apnews.com","dw.com","euronews.com","karar.com","t24.com.tr",
-        "gazeteduvar.com.tr","medyascope.tv","cnnturk.com","indyturk.com",
-        "haberler.com","bbc.com/turkce"
+        "haberturk.com", "ntv.com.tr", "cumhuriyet.com.tr"
     ]
-    dogrulama_platformlari = ["teyit.org", "dogrulukpayi.com","malumatfurus.org",
-                                "factcheck.org","snopes.com",
-                              "politifact.com","fullfact.org","afp.com","reuters.com/fact-check",
-                              "apnews.com/hub/ap-fact-check"
-    ]
+    dogrulama_platformlari = ["teyit.org", "dogrulukpayi.com"]
 
     sorgu_metni = sorgu_icin_temizle(haber_basligi)
     print(f">>> DDG sorgusu: '{sorgu_metni}'")
@@ -87,16 +81,8 @@ def medya_tara(haber_basligi):
         with DDGS() as ddgs:
             sonuclar = list(ddgs.text(sorgu_metni, region="tr-tr", max_results=10))
         print(f"   DDG: {len(sonuclar)} sonuç")
-        for s in sonuclar:
-            print(f"   → {s.get('href','')}")
     except Exception as e:
         print(f"   DDG hatası: {e}")
-    """try:
-        with DDGS() as ddgs:
-            sonuclar = list(ddgs.text(sorgu_metni, region="tr-tr", max_results=10))
-        print(f"   DDG: {len(sonuclar)} sonuç")
-    except Exception as e:
-        print(f"   DDG hatası: {e}")"""
 
 
     if not sonuclar:
@@ -133,13 +119,17 @@ def medya_tara(haber_basligi):
 @app.route("/", methods=["GET", "POST"])
 def index():
     if request.method == "GET":
+        sonuc_verisi = session.pop("sonuc_verisi", None)
+        if sonuc_verisi:
+            return render_template("index.html", **sonuc_verisi)
         return render_template("index.html")
 
     haber_basligi = request.form.get("title", "").strip()
     haber_detayi = request.form.get("content", "").strip()
 
     if not haber_basligi:
-        return render_template("index.html", error="Lütfen en azından bir haber başlığı girin.")
+        session["sonuc_verisi"] = {"error": "Lütfen en azından bir haber başlığı girin."}
+        return redirect(url_for("index"))
 
     # --- ADIM A: ÖNBELLEK KONTROLÜ ---
     conn = None
@@ -155,14 +145,15 @@ def index():
         if kayit:
             cursor.close()
             conn.close()
-            return render_template(
-                "index.html", sonuc=True,
-                baslik=haber_basligi, detay=haber_detayi,
-                model_skoru=kayit[0], medya_durumu=kayit[1], karar=kayit[2],
-                kaynak="Bulut Veritabanı (Önbellek)"
-            )
+            session["sonuc_verisi"] = {
+                "sonuc": True,
+                "baslik": haber_basligi, "detay": haber_detayi,
+                "model_skoru": kayit[0], "medya_durumu": kayit[1], "karar": kayit[2],
+                "kaynak": "Bulut Veritabanı (Önbellek)"
+            }
+            return redirect(url_for("index"))
     except Exception as db_err:
-        print(f"Önbellek okuma hatası: {db_err}")
+        print(f"⚠️ Önbellek okuma hatası: {db_err}")
         conn = None
         cursor = None
 
@@ -210,12 +201,13 @@ def index():
             cursor.close()
             conn.close()
 
-    return render_template(
-        "index.html", sonuc=True,
-        baslik=haber_basligi, detay=haber_detayi,
-        model_skoru=model_skoru, medya_durumu=medya_durumu, karar=karar,
-        kaynak="Canlı Analiz (Yapay Zeka + DuckDuckGo Medya Tarama)"
-    )
+    session["sonuc_verisi"] = {
+        "sonuc": True,
+        "baslik": haber_basligi, "detay": haber_detayi,
+        "model_skoru": model_skoru, "medya_durumu": medya_durumu, "karar": karar,
+        "kaynak": "Canlı Analiz (Yapay Zeka + DuckDuckGo Medya Tarama)"
+    }
+    return redirect(url_for("index"))
 
 if __name__ == "__main__":
     app.run(debug=True)
