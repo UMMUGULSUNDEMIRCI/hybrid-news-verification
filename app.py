@@ -80,8 +80,16 @@ def medya_tara(haber_basligi):
         with DDGS() as ddgs:
             sonuclar = list(ddgs.text(sorgu_metni, region="tr-tr", max_results=10))
         print(f"   DDG: {len(sonuclar)} sonuç")
+        for s in sonuclar:
+            print(f"   → {s.get('href','')}")
     except Exception as e:
         print(f"   DDG hatası: {e}")
+    """try:
+        with DDGS() as ddgs:
+            sonuclar = list(ddgs.text(sorgu_metni, region="tr-tr", max_results=10))
+        print(f"   DDG: {len(sonuclar)} sonuç")
+    except Exception as e:
+        print(f"   DDG hatası: {e}")"""
 
 
     if not sonuclar:
