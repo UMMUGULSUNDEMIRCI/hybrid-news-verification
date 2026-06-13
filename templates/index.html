@@ -3,16 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Yapay Zeka ve Canlı Medya Tabanlı Haber Doğrulama</title>
+    <title>Hibrit Haber Doğrulama Sistemi</title>
     <style>
         :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --bg: #f8fafc;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f3f4f6;
             --card-bg: #ffffff;
-            --text: #1e293b;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
+            --text: #1f2937;
+            --text-muted: #6b7280;
+            --border: #e5e7eb;
+            --success-bg: #f0fdf4;
+            --success-border: #bbf7d0;
+            --success-text: #166534;
+            --warning-bg: #fefce8;
+            --warning-border: #fef08a;
+            --warning-text: #854d0e;
+            --danger-bg: #fef2f2;
+            --danger-border: #fca5a5;
+            --danger-text: #991b1b;
         }
 
         body {
@@ -20,229 +29,543 @@
             background-color: var(--bg);
             color: var(--text);
             margin: 0;
-            padding: 40px 20px;
-            line-height: 1.5;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
 
-        .container { max-width: 760px; margin: 0 auto; }
+        .container { 
+            width: 100%;
+            max-width: 640px; 
+        }
 
         .card {
             background-color: var(--card-bg);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03);
-            padding: 32px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+            padding: 24px;
+            box-sizing: border-box;
+        }
+
+        .header-area {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 24px;
         }
 
-        h1 { font-size: 24px; font-weight: 700; color: #0f172a; margin-top: 0; margin-bottom: 8px; text-align: center; }
-        .subtitle { color: var(--text-muted); font-size: 14px; text-align: center; margin-bottom: 32px; }
-        .form-group { margin-bottom: 20px; }
+        .brand-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
 
-        label { display: block; font-weight: 600; font-size: 14px; margin-bottom: 8px; color: #334155; }
+        .logo-placeholder {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #3b82f6, #4f46e5);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 20px;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.3);
+        }
+
+        .title-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 { 
+            font-size: 18px; 
+            font-weight: 700; 
+            color: #111827; 
+            margin: 0;
+        }
+        
+        .subtitle { 
+            color: var(--text-muted); 
+            font-size: 12px; 
+            margin-top: 2px;
+        }
+
+        .top-reset-btn {
+            background-color: #f3f4f6;
+            border: 1px solid var(--border);
+            color: #4b5563;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+        .top-reset-btn:hover { background-color: #e5e7eb; }
+
+        .form-card {
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 20px;
+            background-color: #ffffff;
+        }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group:last-child { margin-bottom: 0; }
+
+        label { 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+            font-weight: 600; 
+            font-size: 13px; 
+            margin-bottom: 8px; 
+            color: #374151; 
+        }
 
         input[type="text"], textarea {
             width: 100%;
-            padding: 12px 16px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            background-color: #fff;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            background-color: #fafafa;
             color: var(--text);
-            font-size: 15px;
+            font-size: 13px;
             transition: all 0.2s ease;
             box-sizing: border-box;
         }
 
         input[type="text"]:focus, textarea:focus {
             outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            border-color: #6366f1;
+            background-color: #fff;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
 
-        textarea { height: 120px; resize: vertical; }
-        .info-text { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+        textarea { height: 90px; resize: none; }
+        .info-text { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
 
-        .button-group { display: flex; gap: 12px; margin-top: 8px; }
+        .button-group { display: flex; gap: 10px; margin-top: 16px; }
 
         button[type="submit"] {
-            flex: 1;
-            background-color: var(--primary);
+            flex: 3;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
             color: white;
-            padding: 14px;
+            padding: 12px;
             border: none;
-            border-radius: 10px;
-            font-size: 16px;
+            border-radius: 8px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.2s ease;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+            transition: all 0.2s ease;
         }
-
-        button[type="submit"]:hover { background-color: var(--primary-hover); }
+        button[type="submit"]:hover { opacity: 0.95; }
 
         button[type="button"]#yeni-btn {
-            background-color: #f1f5f9;
-            color: #475569;
-            padding: 14px 24px;
+            flex: 1;
+            background-color: #f9fafb;
+            color: #4b5563;
+            padding: 12px;
             border: 1px solid var(--border);
-            border-radius: 10px;
-            font-size: 15px;
+            border-radius: 8px;
+            font-size: 14px;
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s ease;
-            white-space: nowrap;
         }
-
-        button[type="button"]#yeni-btn:hover { background-color: #e2e8f0; color: #1e293b; }
+        button[type="button"]#yeni-btn:hover { background-color: #f3f4f6; }
 
         .alert-error {
-            background-color: #fef2f2;
-            border: 1px solid #fca5a5;
-            color: #991b1b;
-            padding: 14px 16px;
+            background-color: var(--danger-bg);
+            border: 1px solid var(--danger-border);
+            color: var(--danger-text);
+            padding: 12px;
             border-radius: 10px;
-            margin-bottom: 24px;
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .result-section { border-top: 1px solid var(--border); margin-top: 32px; padding-top: 32px; }
-
-        .decision-box {
-            text-align: center;
-            padding: 16px;
-            border-radius: 12px;
-            font-weight: 700;
-            font-size: 18px;
-            margin-bottom: 28px;
-            letter-spacing: 0.5px;
-        }
-
-        .decision-success { background-color: #ecfdf5; border: 1px solid #a7f3d0; color: #065f46; }
-        .decision-warning { background-color: #fffbb1; border: 1px solid #fde047; color: #854d0e; }
-        .decision-danger  { background-color: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; }
-
-        .metric-group { margin-bottom: 20px; }
-        .metric-header { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
-
-        .progress-container { background-color: #e2e8f0; border-radius: 9999px; height: 16px; width: 100%; overflow: hidden; }
-        .progress-bar { height: 100%; border-radius: 9999px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
-        .bg-ai { background-color: #3b82f6; }
-
-        .medya-box {
-            background-color: #f8fafc;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px 20px;
-            margin-bottom: 20px;
-            font-size: 15px;
-            font-weight: 500;
-            color: #1e293b;
-        }
-
-        .medya-box .medya-label {
+            margin-bottom: 16px;
             font-size: 13px;
+        }
+
+        .result-section { 
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 16px;
+        }
+
+        /* Sistem Kararı Kutusu - Varsayılan: GÜVENİLİR (yeşil) */
+        .decision-container {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 20px;
+            border-radius: 14px;
+            background-color: #f0fdf4;
+            border: 1px solid #dcfce7;
+        }
+        
+        .decision-icon-box {
+            width: 48px;
+            height: 48px;
+            background-color: #bbf7d0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #166534;
+            font-size: 22px;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .decision-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .decision-badge {
+            background-color: #bbf7d0;
+            color: #166534;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 4px;
+            width: max-content;
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+
+        .decision-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #14532d;
+        }
+
+        .decision-desc {
+            font-size: 11px;
+            color: #166534;
+            margin-top: 2px;
+            opacity: 0.8;
+        }
+
+        /* Tek sütun (medya durumu kartı tüm genişliği kaplıyor) */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        @media (max-width: 480px) {
+            .metrics-grid { grid-template-columns: 1fr; }
+        }
+
+        .metric-card {
+            background-color: #fcfdfe;
+            border: 1px solid #f1f5f9;
+            border-radius: 12px;
+            padding: 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+        }
+
+        .metric-card-title {
+            font-size: 11px;
             font-weight: 600;
             color: var(--text-muted);
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
+        .metric-value-large {
+            font-size: 24px;
+            font-weight: 800;
+            color: #2563eb;
+            margin-bottom: 8px;
+        }
+
+        .progress-container { 
+            background-color: #e5e7eb; 
+            border-radius: 9999px; 
+            height: 6px; 
+            width: 100%; 
+        }
+        .progress-bar { 
+            height: 100%; 
+            border-radius: 9999px; 
+            background: linear-gradient(to right, #3b82f6, #6366f1);
+        }
+
+        .media-status {
+            font-size: 14px;
+            font-weight: 700;
+            color: #166534;
+            display: flex;
+            align-items: flex-start;
+            gap: 6px;
+            line-height: 1.4;
+        }
+
+        .media-status.media-warning { color: #854d0e; }
+        .media-status.media-neutral { color: #6b7280; }
+
+        /* Büyük Yapay Zeka Doğruluk Skoru (Koyu Panel) */
         .final-score-box {
-            text-align: center;
             background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
             color: white;
-            padding: 32px;
-            border-radius: 16px;
-            margin-top: 32px;
-            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            padding: 24px;
+            border-radius: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.2);
+            gap: 16px;
+            flex-wrap: wrap;
         }
 
-        .final-title { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: #94a3b8; }
+        .final-left {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
 
-        .final-number {
-            font-size: 54px;
+        .final-title { 
+            font-size: 11px; 
+            font-weight: 600; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px; 
+            color: #94a3b8; 
+        }
+
+        .final-number-large {
+            font-size: 36px;
             font-weight: 800;
-            margin: 12px 0;
-            background: linear-gradient(to right, #38bdf8, #3b82f6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #ffffff;
         }
 
         .source-badge {
-            display: inline-block;
-            background-color: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.15);
-            padding: 6px 14px;
-            border-radius: 9999px;
-            font-size: 12px;
-            font-weight: 500;
+            background-color: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
             color: #cbd5e1;
+            width: max-content;
         }
+
+        .final-right-circle {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: conic-gradient(#6366f1 var(--score-pct, 0%), #334155 var(--score-pct, 0%) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .final-right-circle::before {
+            content: "";
+            position: absolute;
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background-color: #111827;
+        }
+
+        .circle-text {
+            position: relative;
+            font-size: 14px;
+            font-weight: 700;
+            color: #38bdf8;
+        }
+
+        .final-footer-text {
+            font-size: 11px;
+            color: #94a3b8;
+            max-width: 240px;
+            line-height: 1.4;
+        }
+
+        /* Detay Alt Bilgisi */
+        .meta-details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            border-top: 1px solid var(--border);
+            padding-top: 14px;
+            margin-top: 4px;
+        }
+
+        @media (max-width: 480px) {
+            .meta-details-grid { grid-template-columns: 1fr; }
+        }
+
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .meta-item strong {
+            color: #374151;
+            margin-bottom: 2px;
+        }
+
+        .bottom-disclaimer {
+            background-color: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 8px;
+            text-align: center;
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 10px;
+        }
+
+        /* Dinamik Karar Renk Ayarları */
+        .decision-warning-box { background-color: #fefce8; border-color: #fef08a; }
+        .decision-warning-box .decision-icon-box { background-color: #fef08a; color: #854d0e; }
+        .decision-warning-box .decision-badge { background-color: #fef08a; color: #854d0e; }
+        .decision-warning-box .decision-title { color: #713f12; }
+        .decision-warning-box .decision-desc { color: #854d0e; }
+
+        .decision-danger-box { background-color: #fef2f2; border-color: #fca5a5; }
+        .decision-danger-box .decision-icon-box { background-color: #fca5a5; color: #991b1b; }
+        .decision-danger-box .decision-badge { background-color: #fca5a5; color: #991b1b; }
+        .decision-danger-box .decision-title { color: #7f1d1d; }
+        .decision-danger-box .decision-desc { color: #991b1b; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="card">
-        <h1>Haber Doğrulama Sistemi</h1>
-        <div class="subtitle">NLP Dil Modeli ve Canlı Medya Tarama Entegrasyonu</div>
+        
+        <div class="header-area">
+            <div class="brand-wrapper">
+                <div class="logo-placeholder">✓</div>
+                <div class="title-group">
+                    <h1>Hibrit Haber Doğrulama Sistemi</h1>
+                    <div class="subtitle">NLP, Makine Öğrenmesi ve Canlı Medya Tarama Entegrasyonu</div>
+                </div>
+            </div>
+            <button type="button" class="top-reset-btn" onclick="formuTemizle()">⟳ Yeni Analiz</button>
+        </div>
 
         {% if error %}
             <div class="alert-error"><strong>Hata:</strong> {{ error }}</div>
         {% endif %}
 
         <form action="/" method="POST" id="main-form">
-            <div class="form-group">
-                <label for="title">Haber Başlığı (Zorunlu)</label>
-                <input type="text" id="title" name="title"
-                    value="{{ baslik if baslik else '' }}"
-                    placeholder="Doğrulanmasını istediğiniz haber başlığını veya iddiayı girin..." required>
-                <div class="info-text">Haber başlığı canlı arama motoru sorgularında anahtar kelime olarak kullanılır.</div>
-            </div>
+            <div class="form-card">
+                <div class="form-group">
+                    <label for="title">🌐 Haber Başlığı <span style="color:red">*</span></label>
+                    <input type="text" id="title" name="title"
+                        value="{{ baslik if baslik else '' }}"
+                        placeholder="Doğrulanmasını istediğiniz haber başlığını veya iddiayı girin..." required>
+                    <div class="info-text">Haber başlığı canlı arama motoru sorgularında anahtar kelime olarak kullanılır.</div>
+                </div>
 
-            <div class="form-group">
-                <label for="content">Haber İçeriği / Detay Metni (Opsiyonel)</label>
-                <textarea id="content" name="content"
-                    placeholder="Eğer varsa, haberin alt metnini veya sosyal medyadaki paylaşım detayını buraya yapıştırın...">{{ detay if detay else '' }}</textarea>
-                <div class="info-text">Detay metni, Yapay Zeka (NLP) modelinin semantik analiz başarısını artırır.</div>
+                <div class="form-group">
+                    <label for="content">📰 Haber İçeriği / Detay Metni <span style="color:var(--text-muted); font-weight:normal">(Opsiyonel)</span></label>
+                    <textarea id="content" name="content"
+                        placeholder="Haberin detayını, iddianın içeriğini veya sosyal medyadaki paylaşım metnini buraya yapıştırın...">{{ detay if detay else '' }}</textarea>
+                    <div class="info-text">Detay metni, Yapay Zeka (NLP) modelinin semantik analiz başarısını artırır.</div>
+                </div>
             </div>
 
             <div class="button-group">
-                <button type="submit">Sistem Analizini Başlat </button>
-                <button type="button" id="yeni-btn" onclick="formuTemizle()">Yeni</button>
+                <button type="submit">Sistem Analizini Başlat</button>
+                <button type="button" id="yeni-btn" onclick="formuTemizle()">Temizle</button>
             </div>
         </form>
 
         {% if sonuc %}
             <div class="result-section">
 
-                <div class="decision-box
-                    {% if 'GÜVENİLİR' in karar %}decision-success
-                    {% elif 'ŞÜPHELİ' in karar %}decision-warning
-                    {% else %}decision-danger{% endif %}">
-                    SİSTEM KARARI: {{ karar }}
+                <div class="decision-container 
+                    {% if 'GÜVENİLİR' in karar %}{% elif 'ŞÜPHELİ' in karar %}decision-warning-box{% else %}decision-danger-box{% endif %}">
+                    <div class="decision-icon-box">
+                        {% if 'GÜVENİLİR' in karar %}✓{% elif 'ŞÜPHELİ' in karar %}!{% else %}✕{% endif %}
+                    </div>
+                    <div class="decision-info">
+                        <div class="decision-badge">Sistem Kararı</div>
+                        <div class="decision-title">{{ karar }}</div>
+                        <div class="decision-desc">
+                            {% if 'GÜVENİLİR' in karar %}
+                                Yapay zeka modeli bu haberin doğruluk olasılığını yüksek olarak değerlendirdi.
+                            {% elif 'ŞÜPHELİ' in karar %}
+                                Yapay zeka modeli bu haber için yeterli kanıt bulamadı, dikkatli olun.
+                            {% else %}
+                                Yapay zeka modeli bu haberin yanlış/dezenformasyon olma olasılığını yüksek buldu.
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
 
-                <div class="metric-group">
-                    <div class="metric-header">
-                        <span>Yapay Zeka NLP Modeli Skoru</span>
-                        <span>%{{ model_skoru }}</span>
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-card-title">Yapay Zeka NLP Model Skoru</div>
+                        <div class="metric-value-large">%{{ model_skoru }}</div>
+                        <div class="progress-container">
+                            <div class="progress-bar" style="width: {{ model_skoru }}%;"></div>
+                        </div>
+                        <div class="info-text" style="margin-top:8px;">Metin analizi ve semantik değerlendirme sonucuna göre doğruluk skoru.</div>
                     </div>
-                    <div class="progress-container">
-                        <div class="progress-bar bg-ai" style="width: {{ model_skoru }}%;"></div>
-                    </div>
-                </div>
 
-                <div class="medya-box">
-                    <div class="medya-label">Canlı Medya Tarama Sonucu</div>
-                    {{ medya_durumu }}
+                    <div class="metric-card">
+                        <div class="metric-card-title">Canlı Medya Tarama Sonucu</div>
+                        <div class="media-status
+                            {% if 'Güvenilir' in medya_durumu %}
+                            {% elif 'doğrulama platformunda' in medya_durumu %}media-warning
+                            {% else %}media-neutral{% endif %}">
+                            {% if 'Güvenilir' in medya_durumu %}✓
+                            {% elif 'doğrulama platformunda' in medya_durumu %}⚠
+                            {% else %}❓{% endif %}
+                            <span>{{ medya_durumu }}</span>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="final-score-box">
-                    <div class="final-title">Yapay Zeka Doğruluk Skoru</div>
-                    <div class="final-number">%{{ model_skoru }}</div>
-                    <div class="source-badge">Veri İşlem Kanalı: {{ kaynak }}</div>
+                    <div class="final-left">
+                        <div class="final-title">Yapay Zeka Doğruluk Skoru</div>
+                        <div class="final-number-large">%{{ model_skoru }}</div>
+                        <div class="source-badge">{{ kaynak }}</div>
+                    </div>
+                    <div class="final-right-circle" style="--score-pct: {{ model_skoru }}%;">
+                        <div class="circle-text">%{{ model_skoru }}</div>
+                    </div>
+                    <div class="final-footer-text">
+                        Bu skor, eğitilmiş makine öğrenmesi modelinin haber metni üzerindeki semantik analizine dayanır. Canlı medya tarama sonucu ayrıca yukarıda gösterilmiştir.
+                    </div>
+                </div>
+
+                <div class="meta-details-grid">
+                    <div class="meta-item">
+                        <strong>📰 Haber Başlığı</strong>
+                        <span>{{ baslik }}</span>
+                    </div>
+                    <div class="meta-item">
+                        <strong>🔍 Veri Kaynağı</strong>
+                        <span>{{ kaynak }}</span>
+                    </div>
+                </div>
+
+                <div class="bottom-disclaimer">
+                    ⓘ Sonuçlar bilgilendirme amaçlıdır. Kesin doğruluk için resmi kaynakları kontrol ediniz.
                 </div>
 
             </div>
@@ -256,13 +579,11 @@
         document.getElementById("content").value = "";
         document.getElementById("title").focus();
 
-        // Sonuç paneli varsa gizle
         const resultSection = document.querySelector(".result-section");
         if (resultSection) {
             resultSection.style.display = "none";
         }
 
-        // Hata mesajı varsa gizle
         const error = document.querySelector(".alert-error");
         if (error) {
             error.style.display = "none";
