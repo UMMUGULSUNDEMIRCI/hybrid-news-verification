@@ -127,7 +127,7 @@
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
         }
 
-        textarea { height: 130px; resize: vertical; }
+        textarea { height: 130px; resize: vertical; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
 
         .info-text {
             font-size: 12px;
@@ -415,13 +415,13 @@
 
                     <div class="form-group">
                         <label for="content">📰 Haber İçeriği / Detay Metni <span style="color:var(--text-muted); font-weight:normal">(Opsiyonel)</span></label>
-                        <textarea id="content" name="title"
+                        <textarea id="content" name="content"
                             placeholder="Haberin detayını, iddianın içeriğini veya sosyal medyadaki paylaşım metnini buraya yapıştırın...">{{ detay if detay else '' }}</textarea>
                         <div class="info-text">Detay metni, Yapay Zeka (NLP) modelinin semantik analiz başarısını artırır.</div>
                     </div>
 
                     <div class="button-group">
-                        <button type="submit">Sistem Analizini Başlat</button>
+                        <button type="submit">🚀 Sistem Analizini Başlat</button>
                         <button type="button" id="yeni-btn" onclick="formuTemizle()">Yeni Analiz</button>
                     </div>
                 </form>
@@ -479,7 +479,10 @@
                     </div>
                 </div>
 
-             
+                <div class="meta-details">
+                    <strong>📰 Haber Başlığı:</strong> {{ baslik }}<br><br>
+                    <strong>🔍 Veri Kaynağı:</strong> {{ kaynak }}
+                </div>
 
                 <div class="bottom-disclaimer">
                     ⓘ Sonuçlar bilgilendirme amaçlıdır. Kesin doğruluk için resmi kaynakları kontrol ediniz.
