@@ -15,7 +15,9 @@ from nltk.corpus import stopwords
 
 app = Flask(__name__)
 
-NEWSDATA_API_KEY = "pub_1740d5ba773b4c15b4c65f55ae55b886"
+GOOGLE_API_KEY = "AIzaSyBwC-JH6MyusYdbWumACqReOupFdfyQ6dQ"
+GOOGLE_CSE_ID = "75e3e687ab1c54bcc"
+
 POSTGRES_URI = "postgresql://postgres.pgzgqtzrvbzxlbdkrmyq:meoBKAAQ8aywkn83@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
@@ -25,9 +27,9 @@ try:
     w2v_model = Word2Vec.load(os.path.join(BASE_DIR, "word2vec_teyit_bir.model"))
     rf_model = joblib.load(os.path.join(BASE_DIR, "random_forest_final_bir.pkl"))
     label_encoder = joblib.load(os.path.join(BASE_DIR, "label_encoder_bir.pkl"))
-    print(f"✅ Modeller başarıyla bağlandı. Sınıflar: {list(label_encoder.classes_)}")
+    print(f"Modeller başarıyla bağlandı. Sınıflar: {list(label_encoder.classes_)}")
 except Exception as e:
-    print(f"❌ Model yükleme hatası: {e}")
+    print(f"Model yükleme hatası: {e}")
     exit(1)
 
 # --- METİN ÖN İŞLEME ---
@@ -41,10 +43,10 @@ def temizle_ve_vektorize_et(text, model, vector_size=100):
     vektorler = [model.wv[k] for k in kelimeler if k in model.wv]
     return np.mean(vektorler, axis=0) if vektorler else np.zeros(vector_size)
 
-# --- NEWSDATA ARAMASI İÇİN SORGU TEMİZLEME ---
+# --- ARAMA SORGUSU İÇİN TEMİZLEME ---
 def sorgu_icin_temizle(text):
     """
-    Newsdata araması için başlığı sadeleştirir:
+    Google CSE araması için başlığı sadeleştirir:
     noktalama işaretlerini temizler, stopword'leri çıkarır,
     ilk 6 anlamlı kelimeyi alır.
     """
@@ -52,62 +54,62 @@ def sorgu_icin_temizle(text):
     text = re.sub(r'[^\w\sçğıöşü]', '', text)
     stop_words = set(stopwords.words('turkish'))
     kelimeler = [k for k in text.split() if k not in stop_words and len(k) > 2]
-    return " OR ".join(kelimeler[:5])
+    return " ".join(kelimeler[:6])
 
-# --- NEWSDATA MEDYA TARAMA ---
+# --- GOOGLE CSE İLE MEDYA TARAMA ---
 def medya_tara(haber_basligi):
     """
-    Newsdata API'den dönen ilk 10 sonuca bakarak medya durumunu belirler.
-    Döndürdüğü değer: medya_durumu (str)
+    Google Custom Search API üzerinden haberi arar.
+    Sonuç linklerinin domain'lerine bakarak medya durumunu belirler.
 
     Olası çıktılar:
     - "Güvenilir medyada yayınlandı: aa.com.tr, ntv.com.tr"
     - "Yalnızca doğrulama platformunda yayınlandı: teyit.org"
-    - "Medyada sonuç bulunamadı"
+    - "Taramada sonuç bulunamadı"
     """
     guvenilir_kaynaklar = [
-        "aa.com.tr", "trthaber.com", "bbc.com", "bbc.com/turkce",
+        "aa.com.tr", "trthaber.com", "bbc.com",
         "sozcu.com.tr", "hurriyet.com.tr", "milliyet.com.tr",
         "haberturk.com", "ntv.com.tr", "cumhuriyet.com.tr"
     ]
     dogrulama_platformlari = ["teyit.org", "dogrulukpayi.com"]
 
-    sonuclar = []
     sorgu_metni = sorgu_icin_temizle(haber_basligi)
-    print(f">>> Temizlenmiş sorgu: '{sorgu_metni}'")
+    print(f">>> Google CSE sorgusu: '{sorgu_metni}'")
+
+    sonuclar = []
     try:
-        url = (
-            f"https://newsdata.io/api/1/latest"
-            f"?apikey={NEWSDATA_API_KEY}"
-            f"&q={requests.utils.quote(sorgu_metni)}"
-            f"&language=tr"
-        )
-        r = requests.get(url, timeout=8)
+        url = "https://www.googleapis.com/customsearch/v1"
+        params = {
+            "key": GOOGLE_API_KEY,
+            "cx": GOOGLE_CSE_ID,
+            "q": sorgu_metni,
+            "num": 10
+        }
+        r = requests.get(url, params=params, timeout=8)
+        print(f">>> Google CSE status: {r.status_code}")
         if r.status_code == 200:
-            sonuclar = r.json().get("results", [])
-            print(f"   Newsdata: {len(sonuclar)} sonuç")
+            sonuclar = r.json().get("items", [])
+            print(f"   Google CSE: {len(sonuclar)} sonuç")
+        else:
+            print(f"   Google CSE yanıt: {r.text[:300]}")
     except Exception as e:
-        print(f"   Newsdata API hatası: {e}")
+        print(f"   Google CSE hatası: {e}")
 
     if not sonuclar:
-        return "Medyada sonuç bulunamadı"
+        return "Taramada sonuç bulunamadı"
 
-    aranan_kelimeler = set(k for k in sorgu_metni.lower().split() if k != "or")
     bulunan_guvenilir = []
     bulunan_dogrulama = []
 
     for sonuc in sonuclar:
         link = sonuc.get("link", "").lower()
-        baslik = sonuc.get("title", "").lower()
-        ortak = set(baslik.split()) & aranan_kelimeler
 
-        # Güvenilir medya — en az 2 ortak kelime şartı
         for domain in guvenilir_kaynaklar:
-            if domain in link and len(ortak) >= 2:
+            if domain in link:
                 bulunan_guvenilir.append(domain)
                 break
 
-        # Doğrulama platformu — kelime şartı yok
         for domain in dogrulama_platformlari:
             if domain in link:
                 bulunan_dogrulama.append(domain)
@@ -121,7 +123,7 @@ def medya_tara(haber_basligi):
         siteler = ", ".join(sorted(set(bulunan_dogrulama)))
         return f"Yalnızca doğrulama platformunda yayınlandı: {siteler}"
 
-    return "Medyada sonuç bulunamadı"
+    return "Taramada sonuç bulunamadı"
 
 
 # --- ANA SAYFA ---
@@ -177,7 +179,7 @@ def index():
         2
     )
 
-    # --- ADIM C: MEDYA TARAMA ---
+    # --- ADIM C: MEDYA TARAMA (Google CSE) ---
     medya_durumu = medya_tara(haber_basligi)
     print(f"   Medya durumu: {medya_durumu}")
 
@@ -209,7 +211,7 @@ def index():
         "index.html", sonuc=True,
         baslik=haber_basligi, detay=haber_detayi,
         model_skoru=model_skoru, medya_durumu=medya_durumu, karar=karar,
-        kaynak="Canlı Analiz (Yapay Zeka + Medya Tarama)"
+        kaynak="Canlı Analiz (Yapay Zeka + Google Medya Tarama)"
     )
 
 if __name__ == "__main__":
