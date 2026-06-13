@@ -6,6 +6,7 @@ import joblib
 import numpy as np
 from flask import Flask, render_template, request
 from gensim.models import Word2Vec
+from ddgs import DDGS
 import nltk
 
 nltk.download('stopwords', quiet=True)
@@ -14,9 +15,6 @@ nltk.download('punkt_tab', quiet=True)
 from nltk.corpus import stopwords
 
 app = Flask(__name__)
-
-GOOGLE_API_KEY = "AIzaSyBwC-JH6MyusYdbWumACqReOupFdfyQ6dQ"
-GOOGLE_CSE_ID = "75e3e687ab1c54bcc"
 
 POSTGRES_URI = "postgresql://postgres.pgzgqtzrvbzxlbdkrmyq:meoBKAAQ8aywkn83@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
@@ -27,9 +25,9 @@ try:
     w2v_model = Word2Vec.load(os.path.join(BASE_DIR, "word2vec_teyit_bir.model"))
     rf_model = joblib.load(os.path.join(BASE_DIR, "random_forest_final_bir.pkl"))
     label_encoder = joblib.load(os.path.join(BASE_DIR, "label_encoder_bir.pkl"))
-    print(f"Modeller başarıyla bağlandı. Sınıflar: {list(label_encoder.classes_)}")
+    print(f"✅ Modeller başarıyla bağlandı. Sınıflar: {list(label_encoder.classes_)}")
 except Exception as e:
-    print(f"Model yükleme hatası: {e}")
+    print(f"❌ Model yükleme hatası: {e}")
     exit(1)
 
 # --- METİN ÖN İŞLEME ---
@@ -46,7 +44,7 @@ def temizle_ve_vektorize_et(text, model, vector_size=100):
 # --- ARAMA SORGUSU İÇİN TEMİZLEME ---
 def sorgu_icin_temizle(text):
     """
-    Google CSE araması için başlığı sadeleştirir:
+    Arama için başlığı sadeleştirir:
     noktalama işaretlerini temizler, stopword'leri çıkarır,
     ilk 6 anlamlı kelimeyi alır.
     """
@@ -56,10 +54,10 @@ def sorgu_icin_temizle(text):
     kelimeler = [k for k in text.split() if k not in stop_words and len(k) > 2]
     return " ".join(kelimeler[:6])
 
-# --- GOOGLE CSE İLE MEDYA TARAMA ---
+# --- DUCKDUCKGO İLE MEDYA TARAMA ---
 def medya_tara(haber_basligi):
     """
-    Google Custom Search API üzerinden haberi arar.
+    DuckDuckGo araması üzerinden haberi arar.
     Sonuç linklerinin domain'lerine bakarak medya durumunu belirler.
 
     Olası çıktılar:
@@ -75,26 +73,16 @@ def medya_tara(haber_basligi):
     dogrulama_platformlari = ["teyit.org", "dogrulukpayi.com"]
 
     sorgu_metni = sorgu_icin_temizle(haber_basligi)
-    print(f">>> Google CSE sorgusu: '{sorgu_metni}'")
+    print(f">>> DDG sorgusu: '{sorgu_metni}'")
 
     sonuclar = []
     try:
-        url = "https://www.googleapis.com/customsearch/v1"
-        params = {
-            "key": GOOGLE_API_KEY,
-            "cx": GOOGLE_CSE_ID,
-            "q": sorgu_metni,
-            "num": 10
-        }
-        r = requests.get(url, params=params, timeout=8)
-        print(f">>> Google CSE status: {r.status_code}")
-        if r.status_code == 200:
-            sonuclar = r.json().get("items", [])
-            print(f"   Google CSE: {len(sonuclar)} sonuç")
-        else:
-            print(f"   Google CSE yanıt: {r.text[:300]}")
+        with DDGS() as ddgs:
+            sonuclar = list(ddgs.text(sorgu_metni, region="tr-tr", max_results=10))
+        print(f"   DDG: {len(sonuclar)} sonuç")
     except Exception as e:
-        print(f"   Google CSE hatası: {e}")
+        print(f"   DDG hatası: {e}")
+
 
     if not sonuclar:
         return "Taramada sonuç bulunamadı"
@@ -103,7 +91,7 @@ def medya_tara(haber_basligi):
     bulunan_dogrulama = []
 
     for sonuc in sonuclar:
-        link = sonuc.get("link", "").lower()
+        link = sonuc.get("href", "").lower()
 
         for domain in guvenilir_kaynaklar:
             if domain in link:
@@ -211,7 +199,7 @@ def index():
         "index.html", sonuc=True,
         baslik=haber_basligi, detay=haber_detayi,
         model_skoru=model_skoru, medya_durumu=medya_durumu, karar=karar,
-        kaynak="Canlı Analiz (Yapay Zeka + Google Medya Tarama)"
+        kaynak="Canlı Analiz (Yapay Zeka + DuckDuckGo Medya Tarama)"
     )
 
 if __name__ == "__main__":
