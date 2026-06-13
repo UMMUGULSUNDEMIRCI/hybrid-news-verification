@@ -71,7 +71,7 @@ def medya_tara(haber_basligi):
         "haberturk.com", "ntv.com.tr", "cumhuriyet.com.tr" ,"reuters.com",
         "apnews.com","dw.com","euronews.com","karar.com","t24.com.tr",
         "gazeteduvar.com.tr","medyascope.tv","cnnturk.com","indyturk.com"
-        "haberler.com"
+        "haberler.com","bbc.com/turkce"
     ]
     dogrulama_platformlari = ["teyit.org", "dogrulukpayi.com","malumatfurus.org",
                                 "factcheck.org","snopes.com","politifact.com",
