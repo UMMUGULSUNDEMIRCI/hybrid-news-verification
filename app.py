@@ -15,7 +15,7 @@ nltk.download('punkt_tab', quiet=True)
 from nltk.corpus import stopwords
 
 app = Flask(__name__)
-app.secret_key = "hibrit-haber-dogrulama-gizli-anahtar-2026"
+app.secret_key = "hibrit-haber-dogrulama-gizli-anahtar-2026-v2"
 
 POSTGRES_URI = "postgresql://postgres.pgzgqtzrvbzxlbdkrmyq:meoBKAAQ8aywkn83@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres"
 HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
@@ -211,3 +211,4 @@ def index():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
