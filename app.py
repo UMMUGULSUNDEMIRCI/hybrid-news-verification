@@ -69,7 +69,7 @@ def medya_tara(haber_basligi):
     guvenilir_kaynaklar = [
         "aa.com.tr", "trthaber.com", "bbc.com",
         "sozcu.com.tr", "hurriyet.com.tr", "milliyet.com.tr",
-        "haberturk.com", "ntv.com.tr", "cumhuriyet.com.tr"
+        "haberturk.com", "ntv.com.tr", "cumhuriyet.com.tr","sabah.com.tr"
     ]
     dogrulama_platformlari = ["teyit.org", "dogrulukpayi.com"]
 
